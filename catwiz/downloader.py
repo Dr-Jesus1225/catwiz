@@ -155,65 +155,150 @@ def progress_hook(d):
     elif d['status'] == 'finished':
         print(f"\r{GREEN}[{'█' * 20}] 100.0%{RESET}" + " " * 25)
 
+
 def process_thumbnail_only(item_url, is_playlist, index, total, save_path, photo_quality, pre_info=None):
     info = pre_info or fetch_info(item_url)
+
     if not info:
-        return item_failed(index, total, 'video not available (private, deleted, or region-locked)', item_url)
+        return item_failed(
+            index, total,
+            'video not available (private, deleted, or region-locked)',
+            item_url
+        )
 
     title = info.get('title', 'thumbnail')
     safe_title = clean_filename(title)
+
     if is_playlist:
         print(f"\n[{index}/{total}] {title}")
     else:
         print()
+
     print("Fetching thumbnail...")
+
+    custom_resolution = (
+        isinstance(photo_quality, dict)
+        and photo_quality.get("type") == "custom"
+    )
 
     downloaded_thumb = None
 
-    if photo_quality and photo_quality.startswith("http"):
+    if isinstance(photo_quality, str) and photo_quality.startswith("http"):
         import urllib.request
+
         temp_img = f"{safe_title}_raw.jpg"
+
         try:
             urllib.request.urlretrieve(photo_quality, temp_img)
             downloaded_thumb = temp_img
         except Exception as e:
-            log_error(item_url, f"direct thumbnail download failed: {e}")
+            log_error(
+                item_url,
+                f"direct thumbnail download failed: {e}"
+            )
 
     if not downloaded_thumb:
-        downloaded_thumb = download_thumbnail_file(item_url, safe_title)
+        downloaded_thumb = download_thumbnail_file(
+            item_url,
+            safe_title
+        )
 
     if not downloaded_thumb or not os.path.exists(downloaded_thumb):
-        return item_failed(index, total, 'could not download the thumbnail', item_url)
+        return item_failed(
+            index, total,
+            'could not download the thumbnail',
+            item_url
+        )
 
     if not ensure_dir(save_path):
         safe_remove(downloaded_thumb)
-        return item_failed(index, total, 'save folder is not writable', item_url)
+        return item_failed(
+            index, total,
+            'save folder is not writable',
+            item_url
+        )
 
     png_path = os.path.join(save_path, f"{safe_title}.png")
-    ok, why = run_ffmpeg(['ffmpeg', '-y', '-i', downloaded_thumb, png_path])
+
+    ffmpeg_cmd = [
+        'ffmpeg',
+        '-y',
+        '-i',
+        downloaded_thumb
+    ]
+
+    if custom_resolution:
+        width = photo_quality["width"]
+        height = photo_quality["height"]
+
+        video_dimensions = get_original_video_dimensions(info)
+
+        method = choose_custom_thumbnail_method(
+            video_dimensions,
+            width,
+            height
+        )
+
+        if method == "crop":
+            video_filter = (
+                f"scale={width}:{height}:force_original_aspect_ratio=increase,"
+                f"crop={width}:{height}:(in_w-{width})/2:(in_h-{height})/2"
+            )
+        else:
+            video_filter = f"scale={width}:{height}"
+
+        ffmpeg_cmd.extend([
+            '-vf',
+            video_filter
+        ])
+
+    ffmpeg_cmd.append(png_path)
+
+    ok, why = run_ffmpeg(ffmpeg_cmd)
+
     if ok:
         safe_remove(downloaded_thumb)
+
         print("Thumbnail downloaded")
+
+        if custom_resolution:
+            print_green(
+                f"Resolution: {width}x{height}"
+            )
+
         print_green(f"Saving to {save_path}")
         print(f"File #{index}/{total} saved")
+
         return True
 
-    # Conversion failed: keep the original image instead of losing it
+    # Conversion failed: keep the original image instead of losing it.
     safe_remove(png_path)
-    log_error(item_url, f"png conversion failed: {why}")
+
+    log_error(
+        item_url,
+        f"png conversion failed: {why}"
+    )
+
     ext = os.path.splitext(downloaded_thumb)[1] or '.jpg'
     kept = os.path.join(save_path, f"{safe_title}{ext}")
+
     try:
         shutil.move(downloaded_thumb, kept)
     except OSError as e:
         safe_remove(downloaded_thumb)
-        return item_failed(index, total, f"could not convert or keep the thumbnail ({short_reason(e)})", item_url)
+
+        return item_failed(
+            index, total,
+            f"could not convert or keep the thumbnail ({short_reason(e)})",
+            item_url
+        )
+
     print(f"{YELLOW}PNG conversion failed ({why}){RESET}")
     print_green(f"Saved the original image instead: {kept}")
     print(f"File #{index}/{total} saved")
+
     return True
 
-CURRENT_ITEM = {'safe_title': None}
 
 def process_single_item(item_url, mode, is_playlist, index, total, save_path, selected_format,
                         pre_info=None, with_audio=True, want_sidecar=False, sidecar_text=None,
