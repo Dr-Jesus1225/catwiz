@@ -6,7 +6,7 @@ import re
 from .captions import pick_caption_track, valid_lrc
 from .utils import log_error, short_reason
 
-<<USER_AGENT = 'CatWiz (https://github.com/Dr-Jesus1225/catwiz)'
+USER_AGENT = 'CatWiz (https://github.com/Dr-Jesus1225/catwiz)'
 LRCLIB_API = 'https://lrclib.net/api'
 
 class ProviderError(Exception):
