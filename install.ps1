@@ -1,4 +1,4 @@
-<<# CatWiz installer for Windows PowerShell
+# CatWiz installer for Windows PowerShell
 function Install-CatWiz {
     $repo = 'https://github.com/Dr-Jesus1225/catwiz.git'
     $dir = Join-Path $HOME 'CatWiz'
