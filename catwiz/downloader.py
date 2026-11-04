@@ -12,6 +12,114 @@ from .sidecar import run_sidecar_step
 from .ui import GREEN, RESET, YELLOW, print_green
 from .utils import QuietLogger, clean_filename, cleanup_partials, ensure_dir, item_failed, log_error, run_ffmpeg, safe_remove, short_reason
 
+
+def get_original_video_dimensions(info):
+    """Find the largest available original video dimensions in yt-dlp metadata."""
+    candidates = []
+
+    if not info:
+        return None
+
+    width = info.get('width')
+    height = info.get('height')
+
+    if (
+        isinstance(width, int)
+        and isinstance(height, int)
+        and width > 0
+        and height > 0
+    ):
+        candidates.append((width, height))
+
+    for fmt in info.get('formats', []):
+        if fmt.get('vcodec') == 'none':
+            continue
+
+        width = fmt.get('width')
+        height = fmt.get('height')
+
+        if (
+            isinstance(width, int)
+            and isinstance(height, int)
+            and width > 0
+            and height > 0
+        ):
+            candidates.append((width, height))
+
+    if not candidates:
+        return None
+
+    return max(candidates, key=lambda dimensions: dimensions[0] * dimensions[1])
+
+
+def choose_custom_thumbnail_method(video_dimensions, target_width, target_height):
+    """Choose how to handle a custom resolution with a different aspect ratio."""
+
+    target_ratio = target_width / target_height
+
+    if video_dimensions:
+        video_width, video_height = video_dimensions
+        original_ratio = video_width / video_height
+
+        difference = abs(original_ratio - target_ratio) / original_ratio
+
+        if difference <= 0.01:
+            print_green(
+                "Custom resolution matches the original video aspect ratio."
+            )
+            return "stretch"
+
+        print()
+        print(
+            f"Original video: {video_width}x{video_height} "
+            f"({original_ratio:.4f})"
+        )
+        print(
+            f"Requested thumbnail: {target_width}x{target_height} "
+            f"({target_ratio:.4f})"
+        )
+        print()
+        print("The aspect ratios are different.")
+    else:
+        print()
+        print(
+            f"{YELLOW}Original video dimensions could not be detected."
+            f" Choose how to resize the thumbnail manually.{RESET}"
+        )
+
+    print(f"\n{CYAN}--------------------------------------{RESET}")
+    print(" Handle Aspect Ratio:")
+    print("  1. Stretch and squeeze")
+    print("  2. Crop with respect to the centre")
+    print("  0. Cancel")
+    print(f"{CYAN}--------------------------------------{RESET}")
+
+    attempts = 0
+
+    while attempts < 3:
+        choice = input(
+            f"{YELLOW}Select option [1/2/0]:{RESET} "
+        ).strip()
+
+        if choice == '1':
+            return "stretch"
+
+        if choice == '2':
+            return "crop"
+
+        if choice == '0':
+            print_green("Operation cancelled.")
+            sys.exit(0)
+
+        attempts += 1
+
+        if attempts < 3:
+            print_green("Invalid selection.")
+        else:
+            print_green("Too many invalid attempts. Exiting.")
+            sys.exit(1)
+
+
 def download_thumbnail_file(item_url, safe_title):
     thumb_opts = {
         'quiet': True,
