@@ -1,5 +1,6 @@
 """The quality menus and the main menu."""
 
+import re
 import sys
 
 from .quality import make_video_format
