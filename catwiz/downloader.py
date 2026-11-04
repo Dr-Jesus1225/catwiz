@@ -1,6 +1,7 @@
-
+    
 """Downloading audio, video and thumbnails."""
 
+import subprocess
 import glob
 import os
 import shutil
@@ -69,6 +70,227 @@ def get_original_video_dimensions(info):
     )
 
 
+
+def select_custom_video_format(
+    info, target_width, target_height, method, with_audio
+):
+    """Select the smallest source format that avoids upscaling."""
+
+    formats = info.get('formats', []) if info else []
+    candidates = []
+
+    target_ratio = target_width / target_height
+
+    for fmt in formats:
+        if fmt.get('vcodec') == 'none':
+            continue
+
+        width = fmt.get('width')
+        height = fmt.get('height')
+        format_id = fmt.get('format_id')
+
+        if not (
+            isinstance(width, int)
+            and isinstance(height, int)
+            and width > 0
+            and height > 0
+            and format_id
+        ):
+            continue
+
+        source_ratio = width / height
+
+        if method == 'crop':
+            # Scale to fill the target without upscaling.
+            sufficient = (
+                width >= target_width
+                and height >= target_height
+                and (
+                    source_ratio >= target_ratio
+                    and height >= target_height
+                    or source_ratio < target_ratio
+                    and width >= target_width
+                )
+            )
+        else:
+            sufficient = (
+                width >= target_width
+                and height >= target_height
+            )
+
+        has_audio = fmt.get('acodec') not in (None, 'none')
+
+        candidates.append({
+            'format_id': str(format_id),
+            'width': width,
+            'height': height,
+            'area': width * height,
+            'has_audio': has_audio,
+            'sufficient': sufficient,
+        })
+
+    if not candidates:
+        return 'bestvideo+bestaudio/best' if with_audio else 'bestvideo/best'
+
+    sufficient_formats = [
+        fmt for fmt in candidates if fmt['sufficient']
+    ]
+
+    if sufficient_formats:
+        selected = min(
+            sufficient_formats,
+            key=lambda fmt: fmt['area']
+        )
+    else:
+        selected = max(
+            candidates,
+            key=lambda fmt: fmt['area']
+        )
+
+    format_id = selected['format_id']
+
+    if with_audio and not selected['has_audio']:
+        result = f'{format_id}+bestaudio'
+    else:
+        result = format_id
+
+    print_green(
+        f"Selected source resolution: "
+        f"{selected['width']}x{selected['height']}"
+    )
+
+    if not sufficient_formats:
+        print(
+            f"{YELLOW}No source resolution was large enough. "
+            f"Using the largest available format.{RESET}"
+        )
+
+    return result
+
+def run_ffmpeg_with_progress(command, duration=None):
+    """Run FFmpeg and display encoding progress."""
+
+    command = [
+        'ffmpeg',
+        '-loglevel', 'error',
+        *command[1:-1],
+        '-progress', 'pipe:1',
+        '-nostats',
+        command[-1],
+    ]
+
+    process = None
+    last_errors = []
+    last_percent = -1
+
+    try:
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1
+        )
+
+        for line in process.stdout:
+            line = line.strip()
+
+            if '=' not in line:
+                if line:
+                    last_errors.append(line)
+                    last_errors = last_errors[-5:]
+                continue
+
+            key, value = line.split('=', 1)
+
+            if key not in ('out_time_us', 'out_time'):
+                continue
+
+            try:
+                if key == 'out_time':
+                    hours, minutes, seconds = value.split(':')
+                    elapsed = (
+                        int(hours) * 3600
+                        + int(minutes) * 60
+                        + float(seconds)
+                    )
+                else:
+                    elapsed = int(value) / 1_000_000
+
+                if duration and duration > 0:
+                    percent = min(100.0, elapsed / duration * 100)
+
+                    if int(percent) != last_percent:
+                        last_percent = int(percent)
+
+                        filled = int(percent / 5)
+                        bar = (
+                            '█' * filled
+                            + '░' * (20 - filled)
+                        )
+
+                        print(
+                            f"\r{GREEN}[{bar}] "
+                            f"{percent:5.1f}%{RESET}   ",
+                            end='',
+                            flush=True
+                        )
+                else:
+                    hours = int(elapsed // 3600)
+                    minutes = int((elapsed % 3600) // 60)
+                    seconds = int(elapsed % 60)
+
+                    print(
+                        f"\r{GREEN}Encoding: "
+                        f"{hours:02}:{minutes:02}:{seconds:02}{RESET}   ",
+                        end='',
+                        flush=True
+                    )
+
+            except (ValueError, TypeError):
+                continue
+
+        return_code = process.wait()
+
+        print()
+
+        if return_code == 0:
+            filled = 20
+            bar = '█' * filled
+
+            print(
+                f"\r{GREEN}[{bar}] 100.0%{RESET}   "
+            )
+
+            return True, ''
+
+        reason = (
+            '\n'.join(last_errors)
+            or f'FFmpeg exited with code {return_code}'
+        )
+
+        return False, reason
+
+    except KeyboardInterrupt:
+        if process and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+
+        raise
+
+    except OSError as e:
+        if process and process.poll() is None:
+            process.kill()
+            process.wait()
+
+        return False, str(e)
+
 def choose_custom_video_method(video_dimensions, target_width, target_height):
     """Choose how to handle a custom video aspect ratio."""
 
@@ -127,7 +349,7 @@ def choose_custom_video_method(video_dimensions, target_width, target_height):
 
         if choice == '0':
             print_green("Operation cancelled.")
-            sys.exit(0)
+            return None
 
         attempts += 1
 
@@ -135,7 +357,7 @@ def choose_custom_video_method(video_dimensions, target_width, target_height):
             print_green("Invalid selection.")
         else:
             print_green("Too many invalid attempts. Exiting.")
-            sys.exit(1)
+            return None
 
 
 def choose_custom_thumbnail_method(video_dimensions, target_width, target_height):
@@ -196,7 +418,7 @@ def choose_custom_thumbnail_method(video_dimensions, target_width, target_height
 
         if choice == '0':
             print_green("Operation cancelled.")
-            sys.exit(0)
+            return None
 
         attempts += 1
 
@@ -204,7 +426,7 @@ def choose_custom_thumbnail_method(video_dimensions, target_width, target_height
             print_green("Invalid selection.")
         else:
             print_green("Too many invalid attempts. Exiting.")
-            sys.exit(1)
+            return None
 
 
 def download_thumbnail_file(item_url, safe_title):
@@ -346,6 +568,9 @@ def process_thumbnail_only(
             height
         )
 
+        if method is None:
+            safe_remove(downloaded_thumb)
+            return False
         if method == "crop":
             video_filter = (
                 f"scale={width}:{height}:force_original_aspect_ratio=increase,"
@@ -502,7 +727,31 @@ def _process_single_item(
         and resolved.get('has_video')
         and not resolved.get('has_audio')
     )
+    custom_method = None
 
+    if custom_resolution:
+        width = selected_format['width']
+        height = selected_format['height']
+
+        video_dimensions = get_original_video_dimensions(info)
+
+        custom_method = choose_custom_video_method(
+            video_dimensions,
+            width,
+            height
+        )
+        
+        if custom_method is None:
+            cleanup_partials(safe_title, png_path)
+            return False
+        
+        download_format = select_custom_video_format(
+            info,
+            width,
+            height,
+            custom_method,
+            with_audio
+        )
     # ---- thumbnail / cover art ----
 
     print("Fetching thumbnail...")
@@ -668,21 +917,14 @@ def _process_single_item(
             item_url
         )
 
+    
     # ---- custom video resolution ----
 
     if custom_resolution:
         width = selected_format['width']
         height = selected_format['height']
 
-        video_dimensions = get_original_video_dimensions(info)
-
-        method = choose_custom_video_method(
-            video_dimensions,
-            width,
-            height
-        )
-
-        if method == "crop":
+        if custom_method == "crop":
             video_filter = (
                 f"scale={width}:{height}:force_original_aspect_ratio=increase,"
                 f"crop={width}:{height}:(in_w-{width})/2:(in_h-{height})/2"
@@ -704,7 +946,7 @@ def _process_single_item(
             '-c:v',
             'libx264',
             '-preset',
-            'medium',
+            'ultrafast',
             '-crf',
             '23',
             '-pix_fmt',
@@ -731,7 +973,10 @@ def _process_single_item(
             f"Resizing video to {width}x{height}..."
         )
 
-        ok, why = run_ffmpeg(resize_cmd)
+        ok, why = run_ffmpeg_with_progress(
+            resize_cmd,
+            info.get('duration')
+        )
 
         if not ok or not os.path.exists(resized_media):
             safe_remove(resized_media)
