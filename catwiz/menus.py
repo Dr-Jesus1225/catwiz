@@ -74,8 +74,9 @@ def select_audio_quality(info, is_playlist):
             print_green("Too many invalid attempts. Exiting.")
             sys.exit(1)
 
-
 def select_photo_quality(info, is_playlist):
+    import re
+
     if is_playlist or not info or 'thumbnails' not in info or not info['thumbnails']:
         options = [
             ("Standard Quality", "standard"),
@@ -84,9 +85,11 @@ def select_photo_quality(info, is_playlist):
         ]
     else:
         dims = []
+
         for t in info['thumbnails']:
             w = t.get('width')
             h = t.get('height')
+
             if w and h:
                 dims.append((w, h, t.get('url')))
 
@@ -105,14 +108,13 @@ def select_photo_quality(info, is_playlist):
             options = [(f"{w}x{h}", url) for w, h, url in dims]
             options.append(("Best Available", "best"))
 
-    options.append(("W. Custom Res", "custom"))
-
     print(f"\n{CYAN}--------------------------------------{RESET}")
     print(" Select Photo Resolution (LxB):")
 
     for idx, (label, _) in enumerate(options, 1):
         print(f"  {idx}. {label}")
 
+    print("  W. Custom resolution")
     print("  0. Cancel")
     print(f"{CYAN}--------------------------------------{RESET}")
 
@@ -121,19 +123,14 @@ def select_photo_quality(info, is_playlist):
 
     while attempts < max_attempts:
         choice = input(
-            f"{YELLOW}Select option [1-{len(options)}/0]:{RESET} "
-        ).strip()
+            f"{YELLOW}Select option [1-{len(options)}/W/0]:{RESET} "
+        ).strip().lower()
 
         if choice == '0':
             print_green("Operation cancelled.")
             sys.exit(0)
 
-        if choice.isdigit() and 1 <= int(choice) <= len(options):
-            selected = options[int(choice) - 1][1]
-
-            if selected != "custom":
-                return selected
-
+        if choice == 'w':
             while attempts < max_attempts:
                 resolution = input(
                     f"{YELLOW}Enter custom resolution (WIDTHxHEIGHT):{RESET} "
@@ -169,15 +166,18 @@ def select_photo_quality(info, is_playlist):
                     print_green("Too many invalid attempts. Exiting.")
                     sys.exit(1)
 
+            break
+
+        if choice.isdigit() and 1 <= int(choice) <= len(options):
+            return options[int(choice) - 1][1]
+
+        attempts += 1
+
+        if attempts < max_attempts:
+            print_green("Invalid selection.")
         else:
-            attempts += 1
-
-            if attempts < max_attempts:
-                print_green("Invalid selection.")
-            else:
-                print_green("Too many invalid attempts. Exiting.")
-                sys.exit(1)
-
+            print_green("Too many invalid attempts. Exiting.")
+            sys.exit(1)
 
 def print_main_menu():
     print(f"{CYAN}======================================{RESET}")
