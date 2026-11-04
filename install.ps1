@@ -87,7 +87,7 @@ function Install-CatwizYtdl {
         $binDir = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps'
         if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
         # One line on purpose: cmd reads it fully before running, so the file can be deleted while it runs
-        $cmdLine = '@echo off & pushd "%TEMP%" & py -3 "%USERPROFILE%\CATWIZ-ytdl\main_cli.py" %* & popd'
+        $cmdLine = '@echo off & pushd "%TEMP%" & py -3 "%USERPROFILE%\CATWIZ-ytdl\main.py" %* & popd'
         Set-Content -Path (Join-Path $binDir 'ytdl.cmd') -Value $cmdLine -Encoding ASCII
         $shortcutOk = $true
         $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
@@ -108,7 +108,7 @@ function Install-CatwizYtdl {
     }
     # Run from the temp folder so nothing keeps the program folder locked (needed for uninstall)
     Push-Location $env:TEMP
-    try { py -3 (Join-Path $dir 'main_cli.py') } finally { Pop-Location }
+    try { py -3 (Join-Path $dir 'main.py') } finally { Pop-Location }
 }
 
 Install-CatwizYtdl

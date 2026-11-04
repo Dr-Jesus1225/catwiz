@@ -147,7 +147,7 @@ fi
 if [ "$OS" = termux ]; then
   python -m pip install -U yt-dlp || fail "Could not install yt-dlp"
   SHORTCUT="$PREFIX/bin/ytdl"
-  printf '#!/data/data/com.termux/files/usr/bin/bash\nexec python "%s/main_cli.py" "$@"\n' "$DIR" > "$SHORTCUT"
+  printf '#!/data/data/com.termux/files/usr/bin/bash\nexec python "%s/main.py" "$@"\n' "$DIR" > "$SHORTCUT"
   chmod +x "$SHORTCUT"
   if [ ! -d "$HOME/storage" ]; then
     echo "${YELLOW}Allow storage access when asked, so downloads can be saved to your phone.${RESET}"
@@ -159,7 +159,7 @@ else
   "$DIR/.venv/bin/pip" install -U yt-dlp || fail "Could not install yt-dlp"
   SHORTCUT="/usr/local/bin/ytdl"
   [ "$OS" = mac ] && sudo mkdir -p /usr/local/bin
-  printf '#!/usr/bin/env bash\nexec "%s/.venv/bin/python" "%s/main_cli.py" "$@"\n' "$DIR" "$DIR" | sudo tee "$SHORTCUT" >/dev/null
+  printf '#!/usr/bin/env bash\nexec "%s/.venv/bin/python" "%s/main.py" "$@"\n' "$DIR" "$DIR" | sudo tee "$SHORTCUT" >/dev/null
   sudo chmod +x "$SHORTCUT"
 fi
 
