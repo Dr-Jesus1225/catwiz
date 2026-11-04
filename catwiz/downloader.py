@@ -9,7 +9,7 @@ from .captions import write_sidecar
 from .links import fetch_info
 from .quality import FORMAT_SORT, announce_quality, resolve_quality
 from .sidecar import run_sidecar_step
-from .ui import GREEN, RESET, YELLOW, print_green
+from .ui import CYAN, GREEN, RESET, YELLOW, print_green
 from .utils import QuietLogger, clean_filename, cleanup_partials, ensure_dir, item_failed, log_error, run_ffmpeg, safe_remove, short_reason
 
 
