@@ -9,7 +9,7 @@ from .menus import print_main_menu, select_audio_quality, select_photo_quality, 
 from .quality import announce_quality, resolve_quality
 from .settings import settings_menu
 from .sidecar import run_sidecar_step
-from .system import check_ffmpeg, get_download_dir
+from .system import check_ffmpeg, get_category_dir
 from .ui import BANNER, CYAN, RESET, YELLOW, ask_yn, print_green
 from .utils import clean_filename
 
