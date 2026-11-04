@@ -22,26 +22,43 @@ def get_config_file():
     return os.path.join(config_dir, 'config.json')
 
 
+
+
 def get_download_dir():
-    """Return the configured CatWiz download root."""
     default_root = os.path.join(get_default_download_dir(), 'CatWiz')
 
     try:
         with open(get_config_file(), 'r', encoding='utf-8') as f:
             config = json.load(f)
 
+        if not isinstance(config, dict):
+            config = {}
+
         custom_path = config.get('download_location')
 
-        if custom_path:
-            return os.path.abspath(os.path.expanduser(custom_path))
-    except (OSError, ValueError, TypeError):
+        if isinstance(custom_path, str) and custom_path.strip():
+            custom_path = os.path.abspath(
+                os.path.expanduser(
+                    os.path.expandvars(custom_path.strip())
+                )
+            )
+
+            is_naked = (
+                os.path.basename(os.path.normpath(custom_path)).lower()
+                != 'catwiz'
+            )
+
+            if is_naked:
+                return os.path.join(custom_path, 'CatWiz')
+
+            return custom_path
+
+    except (OSError, ValueError, TypeError, AttributeError):
         pass
 
     return default_root
 
-
 def set_download_dir(path):
-    """Save the custom CatWiz download root."""
     config_file = get_config_file()
 
     try:
@@ -58,7 +75,6 @@ def set_download_dir(path):
 
     with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
-
 
 def get_category_dir(category):
     """Return the folder for a download category."""
