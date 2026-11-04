@@ -19,7 +19,7 @@ It needs Git, Python, FFmpeg, and yt-dlp.
 ### Termux
 
 ```bash
-pkg install -y curl && bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dr-Jesus1225/ytdl-termux/main/install.sh)"
+pkg install -y curl && bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dr-Jesus1225/catwiz/main/install.sh)"
 ```
 
 Allow storage access when Termux asks, so downloads can be saved to your phone.
@@ -27,19 +27,19 @@ Allow storage access when Termux asks, so downloads can be saved to your phone.
 ### Debian/Ubuntu
 
 ```bash
-sudo apt-get update && sudo apt-get install -y curl && bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dr-Jesus1225/ytdl-termux/main/install.sh)"
+sudo apt-get update && sudo apt-get install -y curl && bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dr-Jesus1225/catwiz/main/install.sh)"
 ```
 
 ### macOS
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dr-Jesus1225/ytdl-termux/main/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Dr-Jesus1225/catwiz/main/install.sh)"
 ```
 
 ### Windows PowerShell
 
 ```powershell
-irm https://raw.githubusercontent.com/Dr-Jesus1225/ytdl-termux/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/Dr-Jesus1225/catwiz/main/install.ps1 | iex
 ```
 
 ## Usage
