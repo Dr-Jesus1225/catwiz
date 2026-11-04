@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CATWIZ-ytdl installer for Termux, Debian/Ubuntu and macOS
-REPO="https://github.com/Dr-Jesus1225/ytdl-termux.git"
+REPO="https://github.com/Dr-Jesus1225/catwiz.git"
 DIR="$HOME/CATWIZ-ytdl"
 
 CYAN=$'\033[96m'; YELLOW=$'\033[93m'; GREEN=$'\033[92m'; RED=$'\033[91m'; RESET=$'\033[0m'
