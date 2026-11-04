@@ -1,6 +1,6 @@
 # CATWIZ-ytdl installer for Windows PowerShell
 function Install-CatwizYtdl {
-    $repo = 'https://github.com/Dr-Jesus1225/ytdl-termux.git'
+    $repo = 'https://github.com/Dr-Jesus1225/catwiz.git'
     $dir = Join-Path $HOME 'CATWIZ-ytdl'
 
     function Test-Cmd($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
