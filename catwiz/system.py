@@ -5,13 +5,74 @@ import re
 import shutil
 import subprocess
 import sys
+import json
 
 from .ui import RED, RESET
 
-def get_download_dir():
+
+def get_default_download_dir():
     if os.path.isdir('/sdcard/Download'):
         return '/sdcard/Download'
     return os.path.join(os.path.expanduser('~'), 'Downloads')
+
+
+def get_config_file():
+    config_dir = os.path.join(os.path.expanduser('~'), '.catwiz')
+    os.makedirs(config_dir, exist_ok=True)
+    return os.path.join(config_dir, 'config.json')
+
+
+def get_download_dir():
+    """Return the configured CatWiz download root."""
+    default_root = os.path.join(get_default_download_dir(), 'CatWiz')
+
+    try:
+        with open(get_config_file(), 'r', encoding='utf-8') as f:
+            config = json.load(f)
+
+        custom_path = config.get('download_location')
+
+        if custom_path:
+            return os.path.abspath(os.path.expanduser(custom_path))
+    except (OSError, ValueError, TypeError):
+        pass
+
+    return default_root
+
+
+def set_download_dir(path):
+    """Save the custom CatWiz download root."""
+    config_file = get_config_file()
+
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            if not isinstance(config, dict):
+                config = {}
+    except (OSError, ValueError):
+        config = {}
+
+    config['download_location'] = os.path.abspath(
+        os.path.expanduser(os.path.expandvars(path))
+    )
+
+    with open(config_file, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=4)
+
+
+def get_category_dir(category):
+    """Return the folder for a download category."""
+    folders = {
+        'audio': 'Audios',
+        'video': 'Videos',
+        'thumbnail': 'Thumbnails'
+    }
+
+    if category not in folders:
+        raise ValueError(f"Unknown download category: {category}")
+
+    return os.path.join(get_download_dir(), folders[category])
+
 
 def check_ffmpeg():
     if shutil.which('ffmpeg') is None:
