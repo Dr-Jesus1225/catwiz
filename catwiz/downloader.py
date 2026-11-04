@@ -12,6 +12,7 @@ from .sidecar import run_sidecar_step
 from .ui import CYAN, GREEN, RESET, YELLOW, print_green
 from .utils import QuietLogger, clean_filename, cleanup_partials, ensure_dir, item_failed, log_error, run_ffmpeg, safe_remove, short_reason
 
+CURRENT_ITEM = {'safe_title': None}
 
 def get_original_video_dimensions(info):
     """Find the largest available original video dimensions in yt-dlp metadata."""
