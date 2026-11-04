@@ -139,7 +139,7 @@ def update_necessary():
     print(" Updating what's necessary")
     print(f"{CYAN}--------------------------------------{RESET}")
     statuses = []
-    print("Updating CATWIZ-ytdl... ", end='', flush=True)
+    print("Updating CatWiz... ", end='', flush=True)
     st, msg = update_program()
     show_status(st, msg)
     statuses.append(st)
@@ -156,7 +156,7 @@ def update_everything():
     print(f"{CYAN}--------------------------------------{RESET}")
     tools = {'termux': 'pkg', 'linux': 'apt', 'mac': 'Homebrew', 'windows': 'winget'}[key]
     print("This will check for updates to:")
-    print("  - CATWIZ-ytdl (the program)")
+    print("  - CatWiz (the program)")
     print("  - yt-dlp")
     print(f"  - FFmpeg, Python and Git (using {tools})")
     if key == 'windows':
@@ -172,7 +172,7 @@ def update_everything():
         return []
     print()
     statuses = []
-    print("Updating CATWIZ-ytdl... ", end='', flush=True)
+    print("Updating CatWiz... ", end='', flush=True)
     st, msg = update_program()
     show_status(st, msg)
     statuses.append(st)
@@ -188,7 +188,7 @@ def update_menu():
     max_attempts = 3
     print(f"\n{CYAN}======================================{RESET}")
     print(" Update")
-    print("  1. Update what's necessary (CATWIZ-ytdl and yt-dlp)")
+    print("  1. Update what's necessary (CatWiz and yt-dlp)")
     print("  2. Update everything (also FFmpeg, Python and Git)")
     print("  0. Back")
     print(f"{CYAN}--------------------------------------{RESET}")
@@ -213,7 +213,7 @@ def update_menu():
     if 'failed' in statuses:
         print(f"{YELLOW}Some updates failed. Running the install command again usually repairs everything.{RESET}")
     if 'changed' in statuses:
-        print_green("Updates installed. Restart CATWIZ-ytdl to use them.")
+        print_green("Updates installed. Restart CatWiz to use them.")
         sys.exit(0)
     if 'failed' not in statuses:
         print_green("Everything is up to date.")

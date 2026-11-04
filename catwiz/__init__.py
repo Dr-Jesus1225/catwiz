@@ -1,1 +1,1 @@
-"""CATWIZ-ytdl: download YouTube audio, video and thumbnails."""
+"""CatWiz: download YouTube audio, video and thumbnails."""

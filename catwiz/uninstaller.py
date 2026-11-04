@@ -102,7 +102,7 @@ def uninstall_menu():
     shortcut_exists = bool(shortcut) and os.path.exists(shortcut)
 
     print(f"\n{CYAN}--------------------------------------{RESET}")
-    print(" Uninstall CATWIZ-ytdl")
+    print(" Uninstall CatWiz")
     print(f"{CYAN}--------------------------------------{RESET}")
     print("This will remove:")
     if folder_ok:
@@ -228,7 +228,7 @@ def uninstall_menu():
         except Exception:
             pass
 
-    print_green("\nCATWIZ-ytdl has been uninstalled.")
+    print_green("\nCatWiz has been uninstalled.")
     if key == 'windows':
         if folder_ok:
             print("The program folder is deleted in the background once this terminal is no longer inside it.")

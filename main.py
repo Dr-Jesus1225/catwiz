@@ -1,4 +1,4 @@
-"""CATWIZ-ytdl entry point."""
+"""CatWiz entry point."""
 import sys
 
 from catwiz.app import main

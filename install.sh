@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# CATWIZ-ytdl installer for Termux, Debian/Ubuntu and macOS
+<<# CatWiz installer for Termux, Debian/Ubuntu and macOS
 REPO="https://github.com/Dr-Jesus1225/catwiz.git"
-DIR="$HOME/CATWIZ-ytdl"
-
+DIR="$HOME/CatWiz"
 CYAN=$'\033[96m'; YELLOW=$'\033[93m'; GREEN=$'\033[92m'; RED=$'\033[91m'; RESET=$'\033[0m'
 
 if [[ "$PREFIX" == *com.termux* ]]; then OS=termux
@@ -75,9 +74,9 @@ join() { local IFS=,; echo "$*" | sed 's/,/, /g'; }
 
 echo
 echo "${CYAN}======================================${RESET}"
-echo " CATWIZ-ytdl installer"
+echo " CatWiz installer"
 echo "${CYAN}--------------------------------------${RESET}"
-echo "CATWIZ-ytdl needs: Git, Python, FFmpeg, yt-dlp"
+echo "CatWiz needs: Git, Python, FFmpeg, yt-dlp"
 if [ ${#FOUND[@]} -gt 0 ]; then echo "Found:   $(join "${FOUND[@]}")"; else echo "Found:   none"; fi
 
 if [ ${#MISSING[@]} -gt 0 ]; then
@@ -143,10 +142,10 @@ else
   git clone "$REPO" "$DIR" || fail "Could not download the project"
 fi
 
-# ---- yt-dlp and the ytdl shortcut ----
+# ---- yt-dlp and the catwiz shortcut ----
 if [ "$OS" = termux ]; then
   python -m pip install -U yt-dlp || fail "Could not install yt-dlp"
-  SHORTCUT="$PREFIX/bin/ytdl"
+  SHORTCUT="$PREFIX/bin/catwiz"
   printf '#!/data/data/com.termux/files/usr/bin/bash\nexec python "%s/main.py" "$@"\n' "$DIR" > "$SHORTCUT"
   chmod +x "$SHORTCUT"
   if [ ! -d "$HOME/storage" ]; then
@@ -157,12 +156,14 @@ if [ "$OS" = termux ]; then
 else
   [ -x "$DIR/.venv/bin/python" ] || python3 -m venv "$DIR/.venv" || fail "Could not create the Python environment"
   "$DIR/.venv/bin/pip" install -U yt-dlp || fail "Could not install yt-dlp"
-  SHORTCUT="/usr/local/bin/ytdl"
+  SHORTCUT="/usr/local/bin/catwiz"
   [ "$OS" = mac ] && sudo mkdir -p /usr/local/bin
   printf '#!/usr/bin/env bash\nexec "%s/.venv/bin/python" "%s/main.py" "$@"\n' "$DIR" "$DIR" | sudo tee "$SHORTCUT" >/dev/null
   sudo chmod +x "$SHORTCUT"
 fi
 
 echo
-echo "${GREEN}Installed. Starting CATWIZ-ytdl (type ytdl next time).${RESET}"
+echo "${GREEN}Installed. Starting CatWiz (type catwiz next time).${RESET}"
 exec "$SHORTCUT"
+
+

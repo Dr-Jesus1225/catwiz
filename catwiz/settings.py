@@ -12,7 +12,7 @@ def settings_menu():
         print(f"\n{CYAN}======================================{RESET}")
         print(" Settings")
         print("  1. Update")
-        print("  2. Uninstall CATWIZ-ytdl")
+        print("  2. Uninstall CatWiz")
         print("  0. Back")
         print(f"{CYAN}--------------------------------------{RESET}")
         attempts = 0

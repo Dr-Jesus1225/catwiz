@@ -69,18 +69,18 @@ def program_dir_is_safe(path):
     if not (os.path.isfile(os.path.join(real, 'main.py')) and os.path.isdir(os.path.join(real, 'catwiz'))):
         return False
     name = os.path.basename(real).lower()
-    return name in ('catwiz-ytdl', 'ytdl-termux') or os.path.isdir(os.path.join(real, '.git'))
+    return name in ('catwiz', 'catwiz-ytdl', 'ytdl-termux') or os.path.isdir(os.path.join(real, '.git'))
 
 def shortcut_path():
     key = platform_key()
     if key == 'termux':
         prefix = os.environ.get('PREFIX', '/data/data/com.termux/files/usr')
-        return os.path.join(prefix, 'bin', 'ytdl')
+        return os.path.join(prefix, 'bin', 'catwiz')
     if key in ('linux', 'mac'):
-        return '/usr/local/bin/ytdl'
+        return '/usr/local/bin/catwiz'
     local = os.environ.get('LOCALAPPDATA')
     if local:
-        return os.path.join(local, 'Microsoft', 'WindowsApps', 'ytdl.cmd')
+        return os.path.join(local, 'Microsoft', 'WindowsApps', 'catwiz.cmd')
     return None
 
 def in_venv():

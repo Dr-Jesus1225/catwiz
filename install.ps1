@@ -1,8 +1,7 @@
-# CATWIZ-ytdl installer for Windows PowerShell
-function Install-CatwizYtdl {
+<<# CatWiz installer for Windows PowerShell
+function Install-CatWiz {
     $repo = 'https://github.com/Dr-Jesus1225/catwiz.git'
-    $dir = Join-Path $HOME 'CATWIZ-ytdl'
-
+    $dir = Join-Path $HOME 'CatWiz'
     function Test-Cmd($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
     function Test-Py {
         if (-not (Test-Cmd 'py')) { return $false }
@@ -32,9 +31,9 @@ function Install-CatwizYtdl {
 
     Write-Host ''
     Write-Host '======================================' -ForegroundColor Cyan
-    Write-Host ' CATWIZ-ytdl installer'
+    Write-Host ' CatWiz installer'
     Write-Host '--------------------------------------' -ForegroundColor Cyan
-    Write-Host 'CATWIZ-ytdl needs: Git, Python, FFmpeg, yt-dlp'
+    Write-Host 'CatWiz needs: Git, Python, FFmpeg, yt-dlp'
     if ($found.Count -gt 0) { Write-Host ('Found:   ' + ($found -join ', ')) } else { Write-Host 'Found:   none' }
 
     if ($missing.Count -gt 0) {
@@ -80,15 +79,15 @@ function Install-CatwizYtdl {
     py -3 -m pip install -U yt-dlp
     if ($LASTEXITCODE -ne 0) { Write-Host 'Could not install yt-dlp.' -ForegroundColor Red; return }
 
-    # ytdl shortcut: a small .cmd file in a folder that is normally already on PATH
+    # catwiz shortcut: a small .cmd file in a folder that is normally already on PATH
     $shortcutNote = ''
     $shortcutOk = $false
     try {
         $binDir = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps'
         if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
         # One line on purpose: cmd reads it fully before running, so the file can be deleted while it runs
-        $cmdLine = '@echo off & pushd "%TEMP%" & py -3 "%USERPROFILE%\CATWIZ-ytdl\main.py" %* & popd'
-        Set-Content -Path (Join-Path $binDir 'ytdl.cmd') -Value $cmdLine -Encoding ASCII
+        $cmdLine = '@echo off & pushd "%TEMP%" & py -3 "%USERPROFILE%\CatWiz\main.py" %* & popd'
+        Set-Content -Path (Join-Path $binDir 'catwiz.cmd') -Value $cmdLine -Encoding ASCII
         $shortcutOk = $true
         $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
         if (($userPath -split ';') -notcontains $binDir) {
@@ -97,18 +96,20 @@ function Install-CatwizYtdl {
             $shortcutNote = ' (open a new terminal first)'
         }
     } catch {
-        Write-Host ('Could not create the ytdl shortcut: ' + $_.Exception.Message) -ForegroundColor Yellow
+        Write-Host ('Could not create the catwiz shortcut: ' + $_.Exception.Message) -ForegroundColor Yellow
     }
 
     Write-Host ''
     if ($shortcutOk) {
-        Write-Host ('Installed. Starting CATWIZ-ytdl (type ytdl next time' + $shortcutNote + ').') -ForegroundColor Green
+        Write-Host ('Installed. Starting CatWiz (type catwiz next time' + $shortcutNote + ').') -ForegroundColor Green
     } else {
-        Write-Host 'Installed. Starting CATWIZ-ytdl.' -ForegroundColor Green
+        Write-Host 'Installed. Starting CatWiz.' -ForegroundColor Green
     }
     # Run from the temp folder so nothing keeps the program folder locked (needed for uninstall)
     Push-Location $env:TEMP
     try { py -3 (Join-Path $dir 'main.py') } finally { Pop-Location }
 }
 
-Install-CatwizYtdl
+Install-CatWiz
+
+

@@ -1,2 +1,6 @@
 __pycache__/
 *.bak
+
+__pycache__/
+*.py[cod]
+.catwiz-rename-backup-*/
