@@ -49,7 +49,7 @@ On Termux, Debian/Ubuntu, and macOS, type `ytdl` to start.
 On Windows there is no `ytdl` shortcut. Run:
 
 ```powershell
-py "$HOME\CATWIZ-ytdl\main_cli.py"
+py "$HOME\CATWIZ-ytdl\main.py"
 ```
 
 ## Where files are saved
