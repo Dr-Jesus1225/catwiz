@@ -75,7 +75,7 @@ def main():
     want_sidecar = False
     if mode == '1':
         selected_quality = select_audio_quality(info, is_playlist)
-        save_path = os.path.join(get_download_dir(), 'Music')
+        save_path = get_category_dir('audio')
         print(f"\n{selected_quality} kbps selected")
         if is_playlist:
             want_sidecar = ask_yn("Download lyrics when available?")
@@ -83,7 +83,7 @@ def main():
             sidecar_text = run_sidecar_step('lyrics', url, info, clean_filename(info.get('title', 'media')), ask=True)
     elif mode == '2':
         selected_quality, quality_label = select_video_quality(info, is_playlist, with_audio)
-        save_path = get_download_dir()
+        save_path = get_category_dir('video')
         if is_playlist:
             announce_quality(None, quality_label)
             want_sidecar = ask_yn("Download subtitles when available?")
@@ -93,7 +93,7 @@ def main():
             sidecar_text = run_sidecar_step('subtitles', url, info, clean_filename(info.get('title', 'media')), ask=True)
     else:
         selected_quality = select_photo_quality(info, is_playlist)
-        save_path = os.path.join(get_download_dir(), 'Thumbnails')
+        save_path = get_category_dir('thumbnail')
 
     results = []
     if is_playlist:
