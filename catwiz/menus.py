@@ -74,6 +74,7 @@ def select_audio_quality(info, is_playlist):
             print_green("Too many invalid attempts. Exiting.")
             sys.exit(1)
 
+
 def select_photo_quality(info, is_playlist):
     if is_playlist or not info or 'thumbnails' not in info or not info['thumbnails']:
         options = [
@@ -88,9 +89,12 @@ def select_photo_quality(info, is_playlist):
             h = t.get('height')
             if w and h:
                 dims.append((w, h, t.get('url')))
-        
-        dims = sorted(list(set(dims)), key=lambda x: x[0] * x[1])
-        
+
+        dims = sorted(
+            list(set(dims)),
+            key=lambda x: x[0] * x[1]
+        )
+
         if not dims:
             options = [
                 ("Standard Quality", "standard"),
@@ -101,28 +105,79 @@ def select_photo_quality(info, is_playlist):
             options = [(f"{w}x{h}", url) for w, h, url in dims]
             options.append(("Best Available", "best"))
 
+    options.append(("W. Custom Res", "custom"))
+
     print(f"\n{CYAN}--------------------------------------{RESET}")
     print(" Select Photo Resolution (LxB):")
+
     for idx, (label, _) in enumerate(options, 1):
         print(f"  {idx}. {label}")
+
     print("  0. Cancel")
     print(f"{CYAN}--------------------------------------{RESET}")
 
     attempts = 0
     max_attempts = 3
+
     while attempts < max_attempts:
-        choice = input(f"{YELLOW}Select option [1-{len(options)}/0]:{RESET} ").strip()
+        choice = input(
+            f"{YELLOW}Select option [1-{len(options)}/0]:{RESET} "
+        ).strip()
+
         if choice == '0':
             print_green("Operation cancelled.")
             sys.exit(0)
+
         if choice.isdigit() and 1 <= int(choice) <= len(options):
-            return options[int(choice) - 1][1]
-        attempts += 1
-        if attempts < max_attempts:
-            print_green("Invalid selection.")
+            selected = options[int(choice) - 1][1]
+
+            if selected != "custom":
+                return selected
+
+            while attempts < max_attempts:
+                resolution = input(
+                    f"{YELLOW}Enter custom resolution (WIDTHxHEIGHT):{RESET} "
+                ).strip()
+
+                if resolution == '0':
+                    print_green("Operation cancelled.")
+                    sys.exit(0)
+
+                match = re.fullmatch(
+                    r"\s*(\d+)\s*[xX×]\s*(\d+)\s*",
+                    resolution
+                )
+
+                if match:
+                    width = int(match.group(1))
+                    height = int(match.group(2))
+
+                    if 1 <= width <= 16384 and 1 <= height <= 16384:
+                        return {
+                            "type": "custom",
+                            "width": width,
+                            "height": height
+                        }
+
+                attempts += 1
+
+                if attempts < max_attempts:
+                    print_green(
+                        "Invalid resolution. Example: 1920x1080"
+                    )
+                else:
+                    print_green("Too many invalid attempts. Exiting.")
+                    sys.exit(1)
+
         else:
-            print_green("Too many invalid attempts. Exiting.")
-            sys.exit(1)
+            attempts += 1
+
+            if attempts < max_attempts:
+                print_green("Invalid selection.")
+            else:
+                print_green("Too many invalid attempts. Exiting.")
+                sys.exit(1)
+
 
 def print_main_menu():
     print(f"{CYAN}======================================{RESET}")
