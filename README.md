@@ -54,7 +54,7 @@ py "$HOME\CatWiz\main.py"
 | System | Folder |
 | --- | --- |
 | Android | `/storage/emulated/0/Download/CatWiz` |
-| Windows | `C:\Users\(your-username)\Downloads`  |
+| Windows | `C:\Users\(your-username)\Downloads\CatWiz`  |
 
 ## Uninstall
 
