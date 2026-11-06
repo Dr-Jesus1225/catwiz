@@ -429,6 +429,152 @@ def choose_custom_thumbnail_method(video_dimensions, target_width, target_height
             return None
 
 
+def download_audio_cover(item_url, safe_title, info):
+    """Prefer the largest genuine square thumbnail for audio cover art."""
+    import urllib.request
+
+    thumbnails = (info or {}).get('thumbnails') or []
+    square_thumbnails = []
+
+    for thumbnail in thumbnails:
+        if not thumbnail or not thumbnail.get('url'):
+            continue
+
+        width = thumbnail.get('width')
+        height = thumbnail.get('height')
+
+        if (
+            isinstance(width, (int, float))
+            and isinstance(height, (int, float))
+            and width > 0
+            and height > 0
+            and abs(width / height - 1.0) <= 0.01
+        ):
+            square_thumbnails.append(thumbnail)
+
+    square_thumbnails.sort(
+        key=lambda thumbnail: (
+            thumbnail.get('width', 0) * thumbnail.get('height', 0)
+        ),
+        reverse=True
+    )
+
+    for index, thumbnail in enumerate(square_thumbnails, 1):
+        path = f"{safe_title}_square_cover_{index}.jpg"
+
+        try:
+            request = urllib.request.Request(
+                thumbnail['url'],
+                headers={'User-Agent': 'Mozilla/5.0'}
+            )
+
+            with urllib.request.urlopen(request, timeout=20) as response:
+                with open(path, 'wb') as output:
+                    shutil.copyfileobj(response, output)
+
+            if os.path.isfile(path) and os.path.getsize(path) > 0:
+                return path
+
+        except Exception as error:
+            safe_remove(path)
+            log_error(item_url, f"square cover download failed: {error}")
+
+    # Fall back to yt-dlp's selected thumbnail if no square variant works.
+    return download_thumbnail_file(item_url, safe_title)
+
+
+def has_centered_square_artwork(image_path):
+    """Detect likely square artwork centered inside a widescreen image."""
+    try:
+        probe = subprocess.run(
+            [
+                'ffprobe', '-v', 'error',
+                '-select_streams', 'v:0',
+                '-show_entries', 'stream=width,height',
+                '-of', 'csv=s=x:p=0',
+                image_path
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+
+        dimensions = probe.stdout.strip().split('x')
+        if len(dimensions) != 2:
+            return False
+
+        width, height = map(int, dimensions)
+        if height <= 0 or not 1.65 <= width / height <= 1.85:
+            return False
+
+        sample = subprocess.run(
+            [
+                'ffmpeg', '-v', 'error', '-i', image_path,
+                '-vf', 'scale=64:36',
+                '-frames:v', '1',
+                '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'
+            ],
+            capture_output=True,
+            timeout=15
+        )
+
+        pixels = sample.stdout
+        if len(pixels) != 64 * 36 * 3:
+            return False
+
+        def region_stats(start, end):
+            values = []
+            for y in range(36):
+                for x in range(start, end):
+                    offset = (y * 64 + x) * 3
+                    values.append((
+                        pixels[offset],
+                        pixels[offset + 1],
+                        pixels[offset + 2]
+                    ))
+
+            means = tuple(
+                sum(pixel[channel] for pixel in values) / len(values)
+                for channel in range(3)
+            )
+            deviation = sum(
+                sum(
+                    abs(pixel[channel] - means[channel])
+                    for channel in range(3)
+                )
+                for pixel in values
+            ) / (len(values) * 3)
+            return means, deviation
+
+        left_mean, left_deviation = region_stats(0, 14)
+        right_mean, right_deviation = region_stats(50, 64)
+        center_mean, center_deviation = region_stats(14, 50)
+
+        sidebar_difference = sum(
+            abs(left_mean[channel] - right_mean[channel])
+            for channel in range(3)
+        ) / 3
+
+        center_difference = sum(
+            abs(
+                center_mean[channel]
+                - (left_mean[channel] + right_mean[channel]) / 2
+            )
+            for channel in range(3)
+        ) / 3
+
+        return (
+            left_deviation <= 18
+            and right_deviation <= 18
+            and sidebar_difference <= 22
+            and center_difference >= 25
+            and center_deviation > 8
+        )
+
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return False
+
+
 def download_thumbnail_file(item_url, safe_title):
     thumb_opts = {
         'quiet': True,
@@ -757,10 +903,17 @@ def _process_single_item(
     print("Fetching thumbnail...")
     have_cover = False
 
-    downloaded_thumb = download_thumbnail_file(
-        item_url,
-        safe_title
-    )
+    if mode == '1':
+        downloaded_thumb = download_audio_cover(
+            item_url,
+            safe_title,
+            info
+        )
+    else:
+        downloaded_thumb = download_thumbnail_file(
+            item_url,
+            safe_title
+        )
 
     if downloaded_thumb and os.path.exists(downloaded_thumb):
 
@@ -773,10 +926,10 @@ def _process_single_item(
             except OSError:
                 pass
 
-        if mode == '1':
+        if mode == '1' and has_centered_square_artwork(downloaded_thumb):
             ffmpeg_cmd = [
                 'ffmpeg', '-y', '-i', downloaded_thumb,
-                '-vf', 'crop=ih:ih', png_path
+                '-vf', 'crop=ih:ih:(iw-ih)/2:0', png_path
             ]
         else:
             ffmpeg_cmd = [
