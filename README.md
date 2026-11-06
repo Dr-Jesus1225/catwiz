@@ -49,7 +49,7 @@ On Termux, Debian/Ubuntu, and macOS, type `catwiz` to start.
 On Windows use the `catwiz` command. Alternatively, run:
 
 ```powershell
-<<py "$HOME\CatWiz\main.py"```
+py "$HOME\CatWiz\main.py"```
 
 ## Where files are saved
 
