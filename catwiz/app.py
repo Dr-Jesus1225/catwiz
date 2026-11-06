@@ -1,4 +1,3 @@
-
 """The terminal flow: main menu, link, quality, download."""
 
 import os
@@ -83,7 +82,6 @@ def main():
     is_playlist = (type_choice == '2')
     playlist_thumbnail_choice = None
 
-    # Ask how playlist thumbnails should be extracted.
     if mode == '3' and is_playlist:
         print(f"\n{CYAN}--------------------------------------{RESET}")
         print("  1. Playlist/album cover art")
@@ -116,7 +114,6 @@ def main():
     url, info, playlist_items = get_validated_url(is_playlist, mode)
 
     with_audio = True
-
     if mode == '2':
         with_audio = ask_yn("Download audio for the video?")
 
@@ -128,44 +125,31 @@ def main():
     if mode == '1':
         selected_quality = select_audio_quality(info, is_playlist)
         save_path = get_category_dir('audio')
-
         print(f"\n{selected_quality} kbps selected")
 
         if is_playlist:
-            want_sidecar = ask_yn(
-                "Download lyrics when available?"
-            )
+            want_sidecar = ask_yn("Download lyrics when available?")
         else:
             sidecar_text = run_sidecar_step(
-                'lyrics',
-                url,
-                info,
+                'lyrics', url, info,
                 clean_filename(info.get('title', 'media')),
                 ask=True
             )
 
     elif mode == '2':
         selected_quality, quality_label = select_video_quality(
-            info,
-            is_playlist,
-            with_audio
+            info, is_playlist, with_audio
         )
-
         save_path = get_category_dir('video')
 
         if is_playlist:
             announce_quality(None, quality_label)
-            want_sidecar = ask_yn(
-                "Download subtitles when available?"
-            )
+            want_sidecar = ask_yn("Download subtitles when available?")
         else:
             resolved = resolve_quality(url, selected_quality)
             announce_quality(resolved, quality_label)
-
             sidecar_text = run_sidecar_step(
-                'subtitles',
-                url,
-                info,
+                'subtitles', url, info,
                 clean_filename(info.get('title', 'media')),
                 ask=True
             )
@@ -173,34 +157,23 @@ def main():
     else:
         if is_playlist and playlist_thumbnail_choice == '1':
             selected_quality = select_photo_quality(
-                info,
-                is_playlist,
-                playlist_cover=True
+                info, is_playlist, playlist_cover=True
             )
         else:
-            selected_quality = select_photo_quality(
-                info,
-                is_playlist
-            )
+            selected_quality = select_photo_quality(info, is_playlist)
 
         save_path = get_category_dir('thumbnail')
 
     results = []
 
-    # Download one image for the entire playlist/album.
     if (
         is_playlist
         and mode == '3'
         and playlist_thumbnail_choice == '1'
     ):
         process_thumbnail_only(
-            url,
-            False,
-            1,
-            1,
-            save_path,
-            selected_quality,
-            pre_info=info
+            url, False, 1, 1, save_path,
+            selected_quality, pre_info=info
         )
         return
 
@@ -211,24 +184,15 @@ def main():
             if mode == '3':
                 results.append(
                     process_thumbnail_only(
-                        item,
-                        True,
-                        idx,
-                        total,
-                        save_path,
-                        selected_quality
+                        item, True, idx, total,
+                        save_path, selected_quality
                     )
                 )
             else:
                 results.append(
                     process_single_item(
-                        item,
-                        mode,
-                        True,
-                        idx,
-                        total,
-                        save_path,
-                        selected_quality,
+                        item, mode, True, idx, total,
+                        save_path, selected_quality,
                         with_audio=with_audio,
                         want_sidecar=want_sidecar,
                         quality_label=quality_label
@@ -237,7 +201,6 @@ def main():
 
         saved = results.count(True)
         failed = results.count(False)
-
         print()
 
         if failed:
@@ -251,24 +214,13 @@ def main():
     else:
         if mode == '3':
             process_thumbnail_only(
-                url,
-                False,
-                1,
-                1,
-                save_path,
-                selected_quality,
-                pre_info=info
+                url, False, 1, 1, save_path,
+                selected_quality, pre_info=info
             )
         else:
             process_single_item(
-                url,
-                mode,
-                False,
-                1,
-                1,
-                save_path,
-                selected_quality,
-                pre_info=info,
+                url, mode, False, 1, 1, save_path,
+                selected_quality, pre_info=info,
                 with_audio=with_audio,
                 sidecar_text=sidecar_text,
                 resolved=resolved,
