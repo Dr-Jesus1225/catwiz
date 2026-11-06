@@ -58,7 +58,7 @@ py "$HOME\CatWiz\main.py"
 
 ## Uninstall
 
-Open the program, choose `-1. Settings`, then `1. Uninstall CatWiz`.
+Open the program, choose `-1. Settings`, then `2. Uninstall CatWiz`.
 
 It removes the program folder and the `catwiz` shortcut. It then lets you choose whether to also remove FFmpeg, yt-dlp, Python, and Git, whether or not this program installed them, and shows roughly how much space that frees. Your downloaded files are never deleted.
 
@@ -66,7 +66,9 @@ Some programs are left out on purpose. On Debian/Ubuntu, Python is not offered, 
 
 ## Updating
 
-Run the install command again and it will pull the latest version. If downloads stop working, update yt-dlp by running the install command again.
+Start CatWiz, choose `-1. Settings`, then `1.Update`;
+Choosing `1. Update what's necessary (CatWiz and yt-dlp)` updates only CatWiz and yt-dlp;
+Choosing `2. Update everything (also FFmpeg, Python and Git)` updates everything that installed with Catwiz, that is, yt-dlp, FFmpeg, Python, and Git.
 
 ## Disclaimer
 
