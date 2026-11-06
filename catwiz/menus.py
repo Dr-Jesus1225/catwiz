@@ -161,13 +161,60 @@ def select_audio_quality(info, is_playlist):
             print_green("Too many invalid attempts. Exiting.")
 
 
-def select_photo_quality(info, is_playlist):
-    if is_playlist or not info or not info.get('thumbnails'):
+def select_photo_quality(info, is_playlist, playlist_cover=False):
+    thumbnails = (info or {}).get('thumbnails') or []
+
+    if playlist_cover:
+        # Playlist metadata may expose the cover as either a thumbnail
+        # list or a single "thumbnail" URL.
+        if info and info.get('thumbnail'):
+            thumbnails = list(thumbnails)
+            thumbnails.append({
+                'url': info['thumbnail'],
+                'width': info.get('width'),
+                'height': info.get('height')
+            })
+
+        valid_thumbnails = [
+            thumbnail for thumbnail in thumbnails
+            if thumbnail and thumbnail.get('url')
+        ]
+
+        dims = []
+
+        for thumbnail in valid_thumbnails:
+            width = thumbnail.get('width')
+            height = thumbnail.get('height')
+
+            if width and height:
+                dims.append((width, height, thumbnail['url']))
+
+        dims = sorted(
+            set(dims),
+            key=lambda item: item[0] * item[1]
+        )
+
+        if dims:
+            options = [
+                (f"{width}x{height}", url)
+                for width, height, url in dims
+            ]
+            options.append(("Best Available", dims[-1][2]))
+        elif valid_thumbnails:
+            options = [
+                ("Best Available", valid_thumbnails[-1]['url'])
+            ]
+        else:
+            print_green("Playlist/album cover art is not available.")
+            sys.exit(0)
+
+    elif is_playlist or not info or not info.get('thumbnails'):
         options = [
             ("Standard Quality", "standard"),
             ("High Quality", "hq"),
             ("Best Available", "best")
         ]
+
     else:
         dims = []
 
@@ -255,8 +302,7 @@ def select_photo_quality(info, is_playlist):
             print_green("Invalid selection.")
         else:
             print_green("Too many invalid attempts. Exiting.")
-
-
+            sys.exit(1)
 def print_main_menu():
     print(f"{CYAN}======================================{RESET}")
     print(" -1. Settings")
