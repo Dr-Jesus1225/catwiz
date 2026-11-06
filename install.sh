@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-<<# CatWiz installer for Termux, Debian/Ubuntu and macOS
+# CatWiz installer for Termux, Debian/Ubuntu and macOS
 REPO="https://github.com/Dr-Jesus1225/catwiz.git"
 DIR="$HOME/CatWiz"
 CYAN=$'\033[96m'; YELLOW=$'\033[93m'; GREEN=$'\033[92m'; RED=$'\033[91m'; RESET=$'\033[0m'
