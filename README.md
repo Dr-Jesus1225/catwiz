@@ -4,15 +4,12 @@
 
 - Audio (.mp3, 128 to 320 kbps), video (.mp4, pick your resolution), or thumbnail (.png)
 - Single links or full playlists
-- Works with `youtube.com`, `music.youtube.com`, `youtu.be`, Shorts, and playlist links
-- Link check with title, artist/channel, and duration, plus a confirmation before anything downloads
-- Progress bar while downloading
+- Works with `youtube.com`, `music.youtube.com`, `youtu.be`, `youtube.com/shorts`, and `youtube.com/playlist`
 - Keeps metadata, cover art, and chapters in your files
-- Built-in uninstaller (Settings menu)
 
 ## Install
 
-Copy the command for your system and paste it into your terminal. It first checks what you already have and tells you what is missing and roughly how much it will download. Nothing is installed until you answer `y`.
+Copy the command for your system and paste it into your terminal.
 
 It needs Git, Python, FFmpeg, and yt-dlp.
 
@@ -52,12 +49,12 @@ On Windows use the `catwiz` command. Alternatively, run:
 py "$HOME\CatWiz\main.py"
 ```
 
-## Where files are saved
+## Default storage location
 
 | System | Folder |
 | --- | --- |
-| Termux | `/sdcard/Download` (audio in `Music`, thumbnails in `Thumbnails`) |
-| Windows, macOS, Linux | Your `Downloads` folder (audio in `Music`, thumbnails in `Thumbnails`) |
+| Android | `/storage/emulated/0/Download/CatWiz` |
+| Windows | `C:\Users\(your-username)\Downloads`  |
 
 ## Uninstall
 
