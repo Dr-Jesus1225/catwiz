@@ -31,7 +31,7 @@ def fetch_playlist_info(url):
         items = [e['url'] for e in info['entries'] if e and e.get('url')]
     else:
         items = [url]
-    return name, creator, items
+    return name, creator, items, info
 
 def get_validated_url(is_playlist, mode):
     attempts = 0
@@ -53,13 +53,13 @@ def get_validated_url(is_playlist, mode):
             if is_playlist:
                 data = fetch_playlist_info(url)
                 if data and data[2]:
-                    name, creator, items = data
+                    name, creator, items, playlist_info = data
                     print_green("Playlist found")
                     print(f"  Name:    {name}")
                     if creator:
                         print(f"  Creator: {creator}")
                     print(f"  Items:   {len(items)}")
-                    result = (url, None, items)
+                    result = (url, playlist_info, items)
             else:
                 info = fetch_info(url)
                 if info:
