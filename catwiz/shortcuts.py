@@ -216,6 +216,7 @@ def change_shortcut():
 
     try:
         _create_shortcut(new_name, case_sensitive)
+        set_shortcut_settings(new_name, case_sensitive)
         new_normalized = {os.path.normcase(os.path.abspath(path)) for path in new_paths}
         for path in old_paths:
             if os.path.normcase(os.path.abspath(path)) in new_normalized:
@@ -228,8 +229,16 @@ def change_shortcut():
             )
             if not shared_path:
                 _remove_path(path)
-        set_shortcut_settings(new_name, case_sensitive)
-    except (OSError, subprocess.SubprocessError) as error:
+    except (OSError, subprocess.SubprocessError, ValueError) as error:
+        # If launcher creation failed before saving settings, remove any newly
+        # created aliases while leaving the previous shortcut intact.
+        if get_shortcut_settings() == (current_name, current_case_sensitive):
+            for path in new_paths:
+                if os.path.normcase(os.path.abspath(path)) not in old_normalized:
+                    try:
+                        _remove_path(path)
+                    except OSError:
+                        pass
         print_green(f"Could not change shortcut: {error}")
         return
 
