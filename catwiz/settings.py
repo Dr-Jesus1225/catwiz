@@ -13,7 +13,8 @@ from .system import (
     get_default_download_dir,
     get_download_dir,
     set_download_dir
-)\nfrom .shortcuts import change_shortcut
+)
+from .shortcuts import change_shortcut
 
 
 def clear_cache():
