@@ -261,9 +261,8 @@ def set_shortcut_settings(name, case_sensitive):
 def shortcut_paths(name, case_sensitive):
     """Return all launcher paths needed to support the selected case policy."""
     key = platform_key()
-    if key in ('windows', 'mac'):
-        # Windows and the usual macOS filesystems resolve command filenames
-        # without case sensitivity; one launcher is enough.
+    if key == 'windows':
+        # Windows resolves command filenames without case sensitivity.
         names = [name]
     elif case_sensitive:
         names = [name]
