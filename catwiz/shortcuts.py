@@ -98,6 +98,12 @@ def _create_shortcut(name, case_sensitive):
     for path in paths:
         if os.path.abspath(path) == os.path.abspath(primary):
             continue
+        if os.path.exists(path) and os.path.exists(primary):
+            try:
+                if os.path.samefile(path, primary):
+                    continue
+            except OSError:
+                pass
         if key in ("linux", "mac"):
             result = _run_privileged(["sudo", "ln", "-sfn", primary, path])
             if result.returncode != 0:
@@ -191,8 +197,16 @@ def change_shortcut():
     for path in new_paths:
         normalized = os.path.normcase(os.path.abspath(path))
         if os.path.lexists(path) and normalized not in old_normalized:
-            print_green(f"That shortcut already exists: {path}")
-            return
+            belongs_to_old_shortcut = any(
+                os.path.lexists(old_path)
+                and os.path.exists(path)
+                and os.path.exists(old_path)
+                and os.path.samefile(path, old_path)
+                for old_path in old_paths
+            )
+            if not belongs_to_old_shortcut:
+                print_green(f"That shortcut already exists: {path}")
+                return
 
     if key in ("linux", "mac"):
         result = _run_privileged(["sudo", "-v"])
@@ -204,7 +218,15 @@ def change_shortcut():
         _create_shortcut(new_name, case_sensitive)
         new_normalized = {os.path.normcase(os.path.abspath(path)) for path in new_paths}
         for path in old_paths:
-            if os.path.normcase(os.path.abspath(path)) not in new_normalized:
+            if os.path.normcase(os.path.abspath(path)) in new_normalized:
+                continue
+            shared_path = any(
+                os.path.exists(path)
+                and os.path.exists(new_path)
+                and os.path.samefile(path, new_path)
+                for new_path in new_paths
+            )
+            if not shared_path:
                 _remove_path(path)
         set_shortcut_settings(new_name, case_sensitive)
     except (OSError, subprocess.SubprocessError) as error:
