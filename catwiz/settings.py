@@ -257,6 +257,7 @@ def settings_menu():
         print("  2. Uninstall CatWiz")
         print("  3. Clear cache")
         print("  4. Change download location")
+        print("  5. Change shortcut")
         print("  0. Back")
         print(f"{CYAN}--------------------------------------{RESET}")
 
@@ -289,3 +290,5 @@ def settings_menu():
             clear_cache()
         elif choice == "4":
             change_download_location()
+        elif choice == "5":
+            change_shortcut()
