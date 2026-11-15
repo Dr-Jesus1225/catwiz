@@ -142,12 +142,11 @@ else
   git clone "$REPO" "$DIR" || fail "Could not download the project"
 fi
 
-# ---- yt-dlp and the catwiz shortcut ----
+# ---- yt-dlp and the configured CatWiz shortcut ----
 if [ "$OS" = termux ]; then
   python -m pip install -U yt-dlp || fail "Could not install yt-dlp"
-  SHORTCUT="$PREFIX/bin/catwiz"
-  printf '#!/data/data/com.termux/files/usr/bin/bash\nexec python "%s/main.py" "$@"\n' "$DIR" > "$SHORTCUT"
-  chmod +x "$SHORTCUT"
+  PYTHON_BIN=python
+  SHORTCUT_DIR="$PREFIX/bin"
   if [ ! -d "$HOME/storage" ]; then
     echo "${YELLOW}Allow storage access when asked, so downloads can be saved to your phone.${RESET}"
     termux-setup-storage
@@ -156,14 +155,18 @@ if [ "$OS" = termux ]; then
 else
   [ -x "$DIR/.venv/bin/python" ] || python3 -m venv "$DIR/.venv" || fail "Could not create the Python environment"
   "$DIR/.venv/bin/pip" install -U yt-dlp || fail "Could not install yt-dlp"
-  SHORTCUT="/usr/local/bin/catwiz"
-  [ "$OS" = mac ] && sudo mkdir -p /usr/local/bin
-  printf '#!/usr/bin/env bash\nexec "%s/.venv/bin/python" "%s/main.py" "$@"\n' "$DIR" "$DIR" | sudo tee "$SHORTCUT" >/dev/null
-  sudo chmod +x "$SHORTCUT"
+  PYTHON_BIN="$DIR/.venv/bin/python"
+  SHORTCUT_DIR="/usr/local/bin"
+  [ "$OS" = mac ] && sudo mkdir -p "$SHORTCUT_DIR"
 fi
 
+cd "$DIR" || fail "Could not enter the CatWiz folder"
+"$PYTHON_BIN" -m catwiz.shortcuts install || fail "Could not create the CatWiz shortcut"
+SHORTCUT_NAME=$("$PYTHON_BIN" -c "from catwiz.system import get_shortcut_settings; print(get_shortcut_settings()[0])") || fail "Could not read shortcut setting"
+SHORTCUT="$SHORTCUT_DIR/$SHORTCUT_NAME"
+
 echo
-echo "${GREEN}Installed. Starting CatWiz (type catwiz next time).${RESET}"
+echo "${GREEN}Installed. Starting CatWiz (type "$SHORTCUT_NAME" next time).${RESET}"
 exec "$SHORTCUT"
 
 

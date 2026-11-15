@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import json
+import itertools
 
 from .ui import RED, RESET
 
@@ -149,16 +150,9 @@ def program_dir_is_safe(path):
     return name in ('catwiz', 'catwiz-ytdl', 'ytdl-termux') or os.path.isdir(os.path.join(real, '.git'))
 
 def shortcut_path():
-    key = platform_key()
-    if key == 'termux':
-        prefix = os.environ.get('PREFIX', '/data/data/com.termux/files/usr')
-        return os.path.join(prefix, 'bin', 'catwiz')
-    if key in ('linux', 'mac'):
-        return '/usr/local/bin/catwiz'
-    local = os.environ.get('LOCALAPPDATA')
-    if local:
-        return os.path.join(local, 'Microsoft', 'WindowsApps', 'catwiz.cmd')
-    return None
+    """Return the primary launcher path for the currently configured command."""
+    paths = shortcut_paths(*get_shortcut_settings())
+    return paths[0] if paths else None
 
 def in_venv():
     return sys.prefix != getattr(sys, 'base_prefix', sys.prefix)
@@ -218,3 +212,75 @@ def run_capture(cmd):
 def last_line(text):
     lines = [l.strip() for l in (text or '').splitlines() if l.strip()]
     return lines[-1] if lines else ''
+
+
+def get_shortcut_settings():
+    """Return (shortcut, case_sensitive), preserving the default for old configs."""
+    try:
+        with open(get_config_file(), 'r', encoding='utf-8') as stream:
+            config = json.load(stream)
+        if not isinstance(config, dict):
+            config = {}
+        name = config.get('shortcut', 'catwiz')
+        case_sensitive = config.get('shortcut_case_sensitive', True)
+        if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,32}', name) or name.startswith('-'):
+            name = 'catwiz'
+        if not isinstance(case_sensitive, bool):
+            case_sensitive = True
+        return name, case_sensitive
+    except (OSError, ValueError, TypeError):
+        return 'catwiz', True
+
+
+def set_shortcut_settings(name, case_sensitive):
+    """Update shortcut keys without discarding other user configuration."""
+    config_file = get_config_file()
+    try:
+        with open(config_file, 'r', encoding='utf-8') as stream:
+            config = json.load(stream)
+        if not isinstance(config, dict):
+            config = {}
+    except (OSError, ValueError, TypeError):
+        config = {}
+    config['shortcut'] = name
+    config['shortcut_case_sensitive'] = bool(case_sensitive)
+    temporary = config_file + '.tmp'
+    with open(temporary, 'w', encoding='utf-8') as stream:
+        json.dump(config, stream, indent=4)
+        stream.write('\n')
+    os.replace(temporary, config_file)
+
+
+def shortcut_paths(name, case_sensitive):
+    """Return all launcher paths needed to support the selected case policy."""
+    key = platform_key()
+    if key in ('windows', 'mac'):
+        # Windows and standard macOS filesystems resolve command names without case sensitivity.
+        names = [name]
+    elif case_sensitive:
+        names = [name]
+    else:
+        letters = [index for index, char in enumerate(name) if char.isalpha()]
+        if len(letters) > 8:
+            raise ValueError('Case-insensitive shortcut supports at most 8 letters on Linux/Termux.')
+        names = []
+        for bits in itertools.product((False, True), repeat=len(letters)):
+            chars = list(name)
+            for index, upper in zip(letters, bits):
+                chars[index] = chars[index].upper() if upper else chars[index].lower()
+            candidate = ''.join(chars)
+            if candidate not in names:
+                names.append(candidate)
+
+    if key == 'termux':
+        prefix = os.environ.get('PREFIX', '/data/data/com.termux/files/usr')
+        return [os.path.join(prefix, 'bin', item) for item in names]
+    if key in ('linux', 'mac'):
+        return [os.path.join('/usr/local/bin', item) for item in names]
+    local = os.environ.get('LOCALAPPDATA')
+    if not local:
+        return []
+    return [
+        os.path.join(local, 'Microsoft', 'WindowsApps', item + '.cmd')
+        for item in names
+    ]

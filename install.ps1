@@ -79,16 +79,22 @@ function Install-CatWiz {
     py -3 -m pip install -U yt-dlp
     if ($LASTEXITCODE -ne 0) { Write-Host 'Could not install yt-dlp.' -ForegroundColor Red; return }
 
-    # catwiz shortcut: a small .cmd file in a folder that is normally already on PATH
+    # Create the command launcher using the same configuration-aware code as Settings.
     $shortcutNote = ''
     $shortcutOk = $false
     try {
+        Push-Location $dir
+        try {
+            py -3 -m catwiz.shortcuts install
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create the CatWiz shortcut.' }
+            $shortcutName = (py -3 -c "from catwiz.system import get_shortcut_settings; print(get_shortcut_settings()[0])").Trim()
+            if (-not $shortcutName) { throw 'Could not read the configured shortcut.' }
+            $shortcutOk = $true
+        } finally {
+            Pop-Location
+        }
+
         $binDir = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps'
-        if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir -Force | Out-Null }
-        # One line on purpose: cmd reads it fully before running, so the file can be deleted while it runs
-        $cmdLine = '@echo off & pushd "%TEMP%" & py -3 "%USERPROFILE%\CatWiz\main.py" %* & popd'
-        Set-Content -Path (Join-Path $binDir 'catwiz.cmd') -Value $cmdLine -Encoding ASCII
-        $shortcutOk = $true
         $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
         if (($userPath -split ';') -notcontains $binDir) {
             [Environment]::SetEnvironmentVariable('Path', ($userPath.TrimEnd(';') + ';' + $binDir), 'User')
@@ -96,12 +102,12 @@ function Install-CatWiz {
             $shortcutNote = ' (open a new terminal first)'
         }
     } catch {
-        Write-Host ('Could not create the catwiz shortcut: ' + $_.Exception.Message) -ForegroundColor Yellow
+        Write-Host ('Could not create the CatWiz shortcut: ' + $_.Exception.Message) -ForegroundColor Yellow
     }
 
     Write-Host ''
     if ($shortcutOk) {
-        Write-Host ('Installed. Starting CatWiz (type catwiz next time' + $shortcutNote + ').') -ForegroundColor Green
+        Write-Host ('Installed. Starting CatWiz (type ' + $shortcutName + ' next time' + $shortcutNote + ').') -ForegroundColor Green
     } else {
         Write-Host 'Installed. Starting CatWiz.' -ForegroundColor Green
     }

@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 
-from .system import DISPLAY, SIZES_MB, brew_formulae, find_brew, fmt_mb, folder_size_mb, in_venv, mac_python_formula, platform_key, program_dir_is_safe, run_quiet, shortcut_path, windows_python_id
+from .system import DISPLAY, SIZES_MB, brew_formulae, find_brew, fmt_mb, folder_size_mb, in_venv, mac_python_formula, platform_key, program_dir_is_safe, run_quiet, get_shortcut_settings, shortcut_paths, windows_python_id
 from .ui import CYAN, RED, RESET, YELLOW, ask_yes_no, print_green
 from .utils import PROGRAM_DIR
 
@@ -98,8 +98,14 @@ def uninstall_menu():
     sizes = SIZES_MB[key]
     folder_ok = program_dir_is_safe(PROGRAM_DIR)
     folder_mb = folder_size_mb(PROGRAM_DIR) if folder_ok else 0
-    shortcut = shortcut_path()
-    shortcut_exists = bool(shortcut) and os.path.exists(shortcut)
+    shortcut_name, shortcut_case_sensitive = get_shortcut_settings()
+    shortcuts = shortcut_paths(shortcut_name, shortcut_case_sensitive)
+    # Also remove the original launcher from installations predating this setting.
+    if shortcut_name != 'catwiz':
+        shortcuts.extend(shortcut_paths('catwiz', True))
+    shortcuts = list(dict.fromkeys(shortcuts))
+    existing_shortcuts = [path for path in shortcuts if os.path.lexists(path)]
+    shortcut_exists = bool(existing_shortcuts)
 
     print(f"\n{CYAN}--------------------------------------{RESET}")
     print(" Uninstall CatWiz")
@@ -111,7 +117,8 @@ def uninstall_menu():
         print(f"  - {YELLOW}Program folder not recognised, so it will NOT be deleted:{RESET}")
         print(f"    {PROGRAM_DIR}")
     if shortcut_exists:
-        print(f"  - Shortcut: {shortcut}")
+        for shortcut in existing_shortcuts:
+            print(f"  - Shortcut: {shortcut}")
     print("Your downloaded files will NOT be deleted.")
 
     items = removable_items()
@@ -173,15 +180,22 @@ def uninstall_menu():
         sudo_ok = subprocess.run(['sudo', '-v']).returncode == 0
 
     if shortcut_exists:
-        print("Removing shortcut... ", end='', flush=True)
+        print("Removing shortcut(s)... ", end='', flush=True)
         if key in ('termux', 'windows'):
-            try:
-                os.remove(shortcut)
-                report(True)
-            except OSError as e:
-                report(False, str(e))
+            failed_shortcuts = []
+            for shortcut in existing_shortcuts:
+                try:
+                    os.remove(shortcut)
+                except OSError as error:
+                    failed_shortcuts.append(str(error))
+            report(not failed_shortcuts, '; '.join(failed_shortcuts))
         elif sudo_ok:
-            report(*run_quiet(['sudo', 'rm', '-f', shortcut]))
+            failed_shortcuts = []
+            for shortcut in existing_shortcuts:
+                ok, reason = run_quiet(['sudo', 'rm', '-f', shortcut])
+                if not ok:
+                    failed_shortcuts.append(reason or shortcut)
+            report(not failed_shortcuts, '; '.join(failed_shortcuts))
         else:
             report(False, 'sudo password needed')
 

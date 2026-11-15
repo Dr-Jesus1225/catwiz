@@ -14,6 +14,7 @@ from .system import (
     get_download_dir,
     set_download_dir
 )
+from .shortcuts import change_shortcut
 
 
 def clear_cache():
@@ -257,6 +258,7 @@ def settings_menu():
         print("  2. Uninstall CatWiz")
         print("  3. Clear cache")
         print("  4. Change download location")
+        print("  5. Change shortcut")
         print("  0. Back")
         print(f"{CYAN}--------------------------------------{RESET}")
 
@@ -265,10 +267,10 @@ def settings_menu():
 
         while attempts < max_attempts:
             choice = input(
-                f"{YELLOW}Select option [1/2/3/4/0]:{RESET} "
+                f"{YELLOW}Select option [1/2/3/4/5/0]:{RESET} "
             ).strip()
 
-            if choice in ("0", "1", "2", "3", "4"):
+            if choice in ("0", "1", "2", "3", "4", "5"):
                 break
 
             attempts += 1
@@ -289,3 +291,5 @@ def settings_menu():
             clear_cache()
         elif choice == "4":
             change_download_location()
+        elif choice == "5":
+            change_shortcut()
