@@ -150,16 +150,9 @@ def program_dir_is_safe(path):
     return name in ('catwiz', 'catwiz-ytdl', 'ytdl-termux') or os.path.isdir(os.path.join(real, '.git'))
 
 def shortcut_path():
-    key = platform_key()
-    if key == 'termux':
-        prefix = os.environ.get('PREFIX', '/data/data/com.termux/files/usr')
-        return os.path.join(prefix, 'bin', 'catwiz')
-    if key in ('linux', 'mac'):
-        return '/usr/local/bin/catwiz'
-    local = os.environ.get('LOCALAPPDATA')
-    if local:
-        return os.path.join(local, 'Microsoft', 'WindowsApps', 'catwiz.cmd')
-    return None
+    """Return the primary launcher path for the currently configured command."""
+    paths = shortcut_paths(*get_shortcut_settings())
+    return paths[0] if paths else None
 
 def in_venv():
     return sys.prefix != getattr(sys, 'base_prefix', sys.prefix)
