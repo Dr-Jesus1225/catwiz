@@ -13,7 +13,7 @@ from .system import (
     get_default_download_dir,
     get_download_dir,
     set_download_dir
-)
+)\nfrom .shortcuts import change_shortcut
 
 
 def clear_cache():
@@ -265,10 +265,10 @@ def settings_menu():
 
         while attempts < max_attempts:
             choice = input(
-                f"{YELLOW}Select option [1/2/3/4/0]:{RESET} "
+                f"{YELLOW}Select option [1/2/3/4/5/0]:{RESET} "
             ).strip()
 
-            if choice in ("0", "1", "2", "3", "4"):
+            if choice in ("0", "1", "2", "3", "4", "5"):
                 break
 
             attempts += 1
