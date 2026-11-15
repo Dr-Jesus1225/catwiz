@@ -1,6 +1,5 @@
 """Create and change the command used to launch CatWiz."""
 
-import itertools
 import os
 import re
 import shlex
@@ -10,7 +9,6 @@ import sys
 import tempfile
 
 from .system import (
-    get_shortcut_names,
     get_shortcut_settings,
     platform_key,
     shortcut_paths,
@@ -66,9 +64,10 @@ def _run_privileged(command):
 
 def _write_primary(path, content):
     key = platform_key()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-
     if key in ("linux", "mac"):
+        result = _run_privileged(["sudo", "mkdir", "-p", os.path.dirname(path)])
+        if result.returncode != 0:
+            raise OSError((result.stderr or result.stdout or "Could not create launcher directory").strip())
         fd, temporary = tempfile.mkstemp(prefix="catwiz-shortcut-")
         try:
             with os.fdopen(fd, "w", encoding="utf-8", newline="") as stream:
@@ -83,6 +82,7 @@ def _write_primary(path, content):
             except OSError:
                 pass
     else:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8", newline="") as stream:
             stream.write(content)
         if key == "termux":
