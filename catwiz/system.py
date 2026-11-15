@@ -254,7 +254,7 @@ def set_shortcut_settings(name, case_sensitive):
     temporary = config_file + '.tmp'
     with open(temporary, 'w', encoding='utf-8') as stream:
         json.dump(config, stream, indent=4)
-        stream.write('\\n')
+        stream.write('\n')
     os.replace(temporary, config_file)
 
 
