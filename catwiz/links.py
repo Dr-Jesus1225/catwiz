@@ -41,7 +41,7 @@ def choose_playlist_items(items, playlist_info):
 
     entries = (playlist_info or {}).get('entries') or []
 
-    print(f"\\n{CYAN}--------------------------------------{RESET}")
+    print(f"\n{CYAN}--------------------------------------{RESET}")
     print(" Playlist Download Options:")
     print("  1. Download the whole playlist")
     print("  2. Download selected items")
@@ -63,14 +63,14 @@ def choose_playlist_items(items, playlist_info):
             break
         print_green("Invalid selection. Choose 1, 2, 3 or 0.")
 
-    print(f"\\nPlaylist items ({len(items)}):")
+    print(f"\nPlaylist items ({len(items)}):")
     for index, item_url in enumerate(items, 1):
         entry = entries[index - 1] if index <= len(entries) else {}
         title = (entry or {}).get('title') or (entry or {}).get('id') or 'Untitled'
         title = ' '.join(str(title).split())
         print(f"  {index:>3}. {title}")
 
-    print("\\nEnter item numbers separated by commas; ranges are supported.")
+    print("\nEnter item numbers separated by commas; ranges are supported.")
     print("Example: 1, 3, 5-8")
     selected = set()
 
@@ -88,10 +88,10 @@ def choose_playlist_items(items, playlist_info):
                 part = part.strip()
                 if not part:
                     raise ValueError
-                if re.fullmatch(r'\\d+', part):
+                if re.fullmatch(r'\d+', part):
                     start = end = int(part)
                 else:
-                    match = re.fullmatch(r'(\\d+)\\s*-\\s*(\\d+)', part)
+                    match = re.fullmatch(r'(\d+)\s*-\s*(\d+)', part)
                     if not match:
                         raise ValueError
                     start, end = map(int, match.groups())
