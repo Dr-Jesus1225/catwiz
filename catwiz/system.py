@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import json
+import itertools
 
 from .ui import RED, RESET
 
