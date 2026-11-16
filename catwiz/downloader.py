@@ -185,6 +185,7 @@ def run_ffmpeg_with_progress(command, duration=None):
     last_percent = -1
 
     try:
+        write_diagnostic(f"FFmpeg command: {command!r}")
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -197,6 +198,8 @@ def run_ffmpeg_with_progress(command, duration=None):
 
         for line in process.stdout:
             line = line.strip()
+            if line:
+                write_diagnostic(f"FFmpeg: {line}")
 
             if '=' not in line:
                 if line:
@@ -501,6 +504,9 @@ def has_centered_square_artwork(image_path):
             timeout=15
         )
 
+        if probe.stderr:
+            for detail in probe.stderr.splitlines():
+                write_diagnostic(f"ffprobe: {detail}")
         dimensions = probe.stdout.strip().split('x')
         if len(dimensions) != 2:
             return False
@@ -520,6 +526,9 @@ def has_centered_square_artwork(image_path):
             timeout=15
         )
 
+        if sample.stderr:
+            for detail in sample.stderr.decode('utf-8', errors='replace').splitlines():
+                write_diagnostic(f"FFmpeg thumbnail probe: {detail}")
         pixels = sample.stdout
         if len(pixels) != 64 * 36 * 3:
             return False
