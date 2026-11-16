@@ -773,16 +773,48 @@ def process_thumbnail_only(
 
 
 def resolve_requested_video_quality(info, selection, with_audio):
-    """Resolve a requested standard height against this video's native formats."""
-    if not (
-        isinstance(selection, dict)
-        and selection.get('type') == 'requested'
-    ):
+    """Prefer exact native formats before falling back to requested resizing."""
+    if not isinstance(selection, dict):
+        return selection
+
+    formats = (info or {}).get('formats', [])
+
+    # Custom dimensions should also use a native stream when an exact match
+    # exists. Only fall through to the existing resize flow when it does not.
+    if selection.get('type') == 'custom':
+        target_width = selection.get('width')
+        target_height = selection.get('height')
+        exact_formats = [
+            fmt for fmt in formats
+            if fmt.get('vcodec') != 'none'
+            and fmt.get('width') == target_width
+            and fmt.get('height') == target_height
+            and fmt.get('format_id')
+        ]
+        if exact_formats:
+            exact_formats.sort(
+                key=lambda fmt: (
+                    with_audio and fmt.get('acodec') in (None, 'none'),
+                    fmt.get('filesize') or fmt.get('filesize_approx') or float('inf')
+                )
+            )
+            native = exact_formats[0]
+            format_id = str(native['format_id'])
+            if with_audio and native.get('acodec') in (None, 'none'):
+                format_id += '+bestaudio'
+            print_green(
+                f"Native {target_width}x{target_height} is available. "
+                "Downloading it without resizing."
+            )
+            return format_id
+        return selection
+
+    if selection.get('type') != 'requested':
         return selection
 
     requested = selection['height']
     available = set()
-    for fmt in (info or {}).get('formats', []):
+    for fmt in formats:
         if fmt.get('vcodec') == 'none':
             continue
         height = fmt.get('height')
