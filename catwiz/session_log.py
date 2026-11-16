@@ -135,7 +135,7 @@ def write_diagnostic(message):
 
 
 def logged_yt_dlp_call(callback, *args, **kwargs):
-    """Run a full yt-dlp setup/operation with all output sent only to logs."""
+    """Run a full yt-dlp setup/operation with output routed only to logs."""
     if not _ACTIVE_LOG:
         return callback(*args, **kwargs)
 
@@ -158,12 +158,13 @@ def logged_yt_dlp_call(callback, *args, **kwargs):
         def writable(self):
             return True
 
-    stdout, stderr = sys.stdout, sys.stderr
+    sink = LogSink()
     try:
-        with contextlib.redirect_stdout(LogSink()), contextlib.redirect_stderr(LogSink()):
+        with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
             return callback(*args, **kwargs)
     finally:
-        sys.stdout, sys.stderr = stdout, stderr
+        # contextlib restores the exact original application tee streams.
+        pass
 
 
 def run_yt_dlp(options, action, *args, **kwargs):
