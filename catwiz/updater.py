@@ -1,5 +1,6 @@
 """Settings > Update."""
 
+import json
 import os
 import shutil
 import subprocess
@@ -143,6 +144,51 @@ def update_system_packages():
             print(f"Updating Python... {RED}failed ({short_reason(e)}){RESET}")
             results.append('failed')
     return results
+
+def check_for_updates_on_startup():
+    """Check CatWiz and yt-dlp, offering to install updates when available."""
+    print("Checking for updates...")
+
+    available = []
+    repo_dir = PROGRAM_DIR
+    if os.path.isdir(os.path.join(repo_dir, '.git')) and shutil.which('git'):
+        fetched, _ = run_capture(['git', '-C', repo_dir, 'fetch', '--quiet'])
+        if fetched:
+            ahead_ok, ahead_out = run_capture([
+                'git', '-C', repo_dir, 'rev-list', '--count', 'HEAD..@{u}'
+            ])
+            if ahead_ok and ahead_out.strip().isdigit() and int(ahead_out.strip()) > 0:
+                available.append("CatWiz")
+
+    pip_ok, pip_out = run_capture([
+        sys.executable, '-m', 'pip', 'list', '--outdated', '--format=json'
+    ])
+    if pip_ok:
+        try:
+            outdated = json.loads(pip_out)
+            if any(str(item.get('name', '')).lower() == 'yt-dlp' for item in outdated):
+                available.append("yt-dlp")
+        except (ValueError, TypeError, AttributeError):
+            pass
+
+    if not available:
+        print_green("CatWiz and yt-dlp are up to date.")
+        return
+
+    print(f"Updates available: {', '.join(available)}.")
+    if not ask_yes_no("Install updates now?"):
+        print(f"{YELLOW}Updates skipped. You can install them later from Settings > Update.{RESET}")
+        return
+
+    statuses = update_necessary()
+    if 'changed' in statuses:
+        print_green("Updates installed. Restarting CatWiz automatically...")
+        sys.exit(75)
+    if 'failed' in statuses:
+        print(f"{YELLOW}Some updates could not be installed. Check logs.txt for details.{RESET}")
+    else:
+        print_green("Everything is up to date.")
+
 
 def update_catwiz_only():
     """Update only the CatWiz program; leave yt-dlp and system packages alone."""
