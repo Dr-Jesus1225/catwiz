@@ -6,7 +6,6 @@ import glob
 import os
 import shutil
 import sys
-import yt_dlp
 
 from .cookies import apply_browser_cookies
 from .captions import write_sidecar
