@@ -36,7 +36,7 @@ def update_program():
 
 def update_ytdlp():
     before = ytdlp_version()
-    cmd = [sys.executable, '-m', 'pip', 'install', '-U', 'yt-dlp']
+    cmd = [sys.executable, '-m', 'pip', 'install', '-U', 'yt-dlp', 'certifi']
     ok, out = run_capture(cmd)
     if not ok and 'externally-managed' in out.lower() and not in_venv():
         ok, out = run_capture(cmd + ['--break-system-packages'])
