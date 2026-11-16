@@ -135,7 +135,10 @@ def _migrate_legacy_log(paths):
         if os.path.isfile(old_path):
             from .logging_redaction import redact_text
             with open(old_path, "r", encoding="utf-8", errors="replace") as source:
-                safe_contents = "\\n".join(\n                line for line in redact_text(source.read()).splitlines()\n                if "[USER INPUT]" not in line\n            )
+                safe_contents = "\n".join(
+                    line for line in redact_text(source.read()).splitlines()
+                    if "[USER INPUT]" not in line
+                )
             with open(os.path.join(paths["archive"], "legacy-logs.txt"), "w", encoding="utf-8") as target:
                 target.write(safe_contents)
         with open(marker, "w", encoding="utf-8") as stream:
