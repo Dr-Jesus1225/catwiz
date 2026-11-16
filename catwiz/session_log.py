@@ -1,6 +1,7 @@
 """Timestamped per-session logging for CatWiz."""
 
 import builtins
+import contextlib
 import os
 import re
 import sys
@@ -98,11 +99,11 @@ def _install_input_logging():
     _ORIGINAL_INPUT = builtins.input
 
     def logged_input(prompt=""):
-        if prompt:
-            sys.stdout.write(str(prompt))
-            sys.stdout.flush()
-        value = _ORIGINAL_INPUT()
         stream = sys.stdout
+        if prompt:
+            stream.write(str(prompt))
+            stream.flush()
+        value = _ORIGINAL_INPUT()
         if isinstance(stream, _TeeStream):
             stream.log_input(prompt, value)
         return value
@@ -159,8 +160,8 @@ def logged_yt_dlp_call(callback, *args, **kwargs):
 
     stdout, stderr = sys.stdout, sys.stderr
     try:
-        sys.stdout, sys.stderr = LogSink(), LogSink()
-        return callback(*args, **kwargs)
+        with contextlib.redirect_stdout(LogSink()), contextlib.redirect_stderr(LogSink()):
+            return callback(*args, **kwargs)
     finally:
         sys.stdout, sys.stderr = stdout, stderr
 
