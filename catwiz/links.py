@@ -18,6 +18,7 @@ def fetch_playlist_info(url):
         'quiet': True,
         'no_warnings': False,
         'verbose': True,
+        'extractor_args': {'youtubetab': {'skip': ['authcheck']}},
         'extract_flat': True,
     }
     with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
