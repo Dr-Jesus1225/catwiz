@@ -15,6 +15,7 @@ from .system import (
     set_download_dir
 )
 from .shortcuts import change_shortcut
+from .cookies import browser_cookies_menu
 
 
 def clear_cache():
@@ -259,6 +260,7 @@ def settings_menu():
         print("  3. Clear cache")
         print("  4. Change download location")
         print("  5. Change shortcut")
+        print("  6. YouTube browser cookies")
         print("  0. Back")
         print(f"{CYAN}--------------------------------------{RESET}")
 
@@ -267,10 +269,10 @@ def settings_menu():
 
         while attempts < max_attempts:
             choice = input(
-                f"{YELLOW}Select option [1/2/3/4/5/0]:{RESET} "
+                f"{YELLOW}Select option [1/2/3/4/5/6/0]:{RESET} "
             ).strip()
 
-            if choice in ("0", "1", "2", "3", "4", "5"):
+            if choice in ("0", "1", "2", "3", "4", "5", "6"):
                 break
 
             attempts += 1
@@ -293,3 +295,5 @@ def settings_menu():
             change_download_location()
         elif choice == "5":
             change_shortcut()
+        elif choice == "6":
+            browser_cookies_menu()
