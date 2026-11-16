@@ -12,7 +12,6 @@ else
   exit 1
 fi
 
-# Homebrew may be installed but not on PATH yet
 if [ "$OS" = mac ]; then
   for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
     [ -x "$b" ] && eval "$("$b" shellenv)"
@@ -21,9 +20,9 @@ fi
 
 size_of() {
   case "$OS-$1" in
-    termux-git) echo 40;;   termux-python) echo 100;; termux-ffmpeg) echo 150;; termux-yt-dlp) echo 20;;
-    linux-git) echo 50;;    linux-python) echo 60;;    linux-ffmpeg) echo 250;;  linux-yt-dlp) echo 20;;
-    mac-git) echo 60;;      mac-python) echo 150;;     mac-ffmpeg) echo 400;;    mac-yt-dlp) echo 20;;
+    termux-git) echo 40;; termux-python) echo 100;; termux-ffmpeg) echo 150;; termux-yt-dlp) echo 20;;
+    linux-git) echo 50;; linux-python) echo 60;; linux-ffmpeg) echo 250;; linux-yt-dlp) echo 20;;
+    mac-git) echo 60;; mac-python) echo 150;; mac-ffmpeg) echo 400;; mac-yt-dlp) echo 20;;
     termux-certifi) echo 2;; linux-certifi) echo 2;; mac-certifi) echo 2;;
     mac-homebrew) echo 1500;;
   esac
@@ -52,14 +51,14 @@ has_certifi() {
 }
 
 FOUND=(); MISSING=(); TOTAL=0
-NEED_GIT=0; NEED_PYTHON=0; NEED_FFMPEG=0; NEED_YTDLP=0; NEED_BREW=0
+NEED_GIT=0; NEED_PYTHON=0; NEED_FFMPEG=0; NEED_BREW=0
 
-check() { # label, id, function
+check() {
   if "$3"; then FOUND+=("$1")
   else
     local mb; mb=$(size_of "$2")
     MISSING+=("$1 (~${mb} MB)"); TOTAL=$((TOTAL + mb))
-    case "$2" in git) NEED_GIT=1;; python) NEED_PYTHON=1;; ffmpeg) NEED_FFMPEG=1;; yt-dlp) NEED_YTDLP=1;; esac
+    case "$2" in git) NEED_GIT=1;; python) NEED_PYTHON=1;; ffmpeg) NEED_FFMPEG=1;; esac
   fi
 }
 
@@ -90,10 +89,7 @@ if [ ${#MISSING[@]} -gt 0 ]; then
   echo "Total to install: about ${TOTAL} MB"
   while true; do
     read -r -p "${YELLOW}Install the missing items? [y/n]:${RESET} " ans
-    case "$ans" in
-      [Yy]) break;;
-      [Nn]) echo "Install cancelled."; exit 0;;
-    esac
+    case "$ans" in [Yy]) break;; [Nn]) echo "Install cancelled."; exit 0;; esac
   done
 else
   echo "${GREEN}Everything is already installed.${RESET}"
@@ -102,7 +98,6 @@ echo
 
 fail() { echo "${RED}$1${RESET}"; exit 1; }
 
-# ---- install missing programs ----
 case "$OS" in
   termux)
     pkgs=()
@@ -139,7 +134,6 @@ case "$OS" in
     ;;
 esac
 
-# ---- download or update the project ----
 if [ -d "$DIR/.git" ]; then
   git -C "$DIR" pull || echo "${YELLOW}Could not update, using the existing copy.${RESET}"
 elif [ -d "$DIR" ]; then
@@ -148,7 +142,6 @@ else
   git clone "$REPO" "$DIR" || fail "Could not download the project"
 fi
 
-# ---- yt-dlp and the configured CatWiz shortcut ----
 if [ "$OS" = termux ]; then
   python -m pip install -U 'yt-dlp[default]' certifi bgutil-ytdlp-pot-provider || fail "Could not install yt-dlp and certificate bundle"
   PYTHON_BIN=python
@@ -161,7 +154,7 @@ if [ "$OS" = termux ]; then
   fi
 else
   [ -x "$DIR/.venv/bin/python" ] || python3 -m venv "$DIR/.venv" || fail "Could not create the Python environment"
-  "$DIR/.venv/bin/pip" install -U "yt-dlp[default]" certifi bgutil-ytdlp-pot-provider PySide6 || fail "Could not install yt-dlp, certificates and desktop GUI"
+  "$DIR/.venv/bin/pip" install -U "yt-dlp[default]" certifi bgutil-ytdlp-pot-provider || fail "Could not install yt-dlp and certificate bundle"
   PYTHON_BIN="$DIR/.venv/bin/python"
   if [ "$OS" = mac ]; then
     brew install deno || fail "Could not install Deno JavaScript runtime"
@@ -181,5 +174,3 @@ SHORTCUT="$SHORTCUT_DIR/$SHORTCUT_NAME"
 echo
 echo "${GREEN}Installed. Starting CatWiz (type "$SHORTCUT_NAME" next time).${RESET}"
 exec "$SHORTCUT"
-
-
