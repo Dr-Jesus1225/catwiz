@@ -1,6 +1,7 @@
 """Timestamped per-session logging for CatWiz."""
 
 import builtins
+import contextlib
 import os
 import re
 import sys
@@ -13,6 +14,8 @@ _ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 _MENU_OPTION = re.compile(r"^\s*(-?\d+)\.\s+(.+?)\s*$")
 _ACTIVE_LOG = None
 _ORIGINAL_INPUT = None
+_STDOUT_REDIRECT = None
+_STDERR_REDIRECT = None
 
 
 def _timestamp():
@@ -113,11 +116,17 @@ def _install_input_logging():
 
 def stop_session_logging(log_file):
     """Restore process streams and close this session's log."""
-    global _ORIGINAL_INPUT
+    global _ORIGINAL_INPUT, _STDOUT_REDIRECT, _STDERR_REDIRECT
     if _ORIGINAL_INPUT is not None:
         builtins.input = _ORIGINAL_INPUT
         _ORIGINAL_INPUT = None
     global _ACTIVE_LOG
+    if _STDERR_REDIRECT is not None:
+        _STDERR_REDIRECT.__exit__(None, None, None)
+        _STDERR_REDIRECT = None
+    if _STDOUT_REDIRECT is not None:
+        _STDOUT_REDIRECT.__exit__(None, None, None)
+        _STDOUT_REDIRECT = None
     if log_file:
         try:
             sys.stdout.flush()
@@ -137,7 +146,7 @@ def write_diagnostic(message):
 
 def start_session_logging():
     """Overwrite logs.txt and capture timestamped output and user input."""
-    global _ACTIVE_LOG
+    global _ACTIVE_LOG, _STDOUT_REDIRECT, _STDERR_REDIRECT
     try:
         directory = get_download_dir()
         os.makedirs(directory, exist_ok=True)
@@ -156,7 +165,18 @@ def start_session_logging():
         return None
 
     _ACTIVE_LOG = log_file
-    sys.stdout = _TeeStream(sys.stdout, log_file)
-    sys.stderr = _TeeStream(sys.stderr, log_file)
+    terminal_stdout, terminal_stderr = sys.stdout, sys.stderr
+    logged_stdout = _TeeStream(terminal_stdout, log_file)
+    logged_stderr = _TeeStream(terminal_stderr, log_file)
+
+    # Redirect yt-dlp's own console output to the log, not to the user's terminal.
+    _STDOUT_REDIRECT = contextlib.redirect_stdout(logged_stdout)
+    _STDERR_REDIRECT = contextlib.redirect_stderr(logged_stderr)
+    _STDOUT_REDIRECT.__enter__()
+    _STDERR_REDIRECT.__enter__()
+
+    # Normal CatWiz print/input remains visible on the actual terminal.
+    sys.stdout = _TeeStream(terminal_stdout, log_file)
+    sys.stderr = _TeeStream(terminal_stderr, log_file)
     _install_input_logging()
     return log_file
