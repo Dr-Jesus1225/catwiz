@@ -9,6 +9,17 @@ RESTART_EXIT_CODE = 75
 
 
 def run():
+    # Prefer the desktop GUI when PySide6 is installed. The CLI remains
+    # available everywhere through the --cli argument and as a fallback.
+    if "--cli" not in sys.argv:
+        try:
+            from catwiz.system import platform_key
+            if platform_key() != "termux":
+                from gui.app import run as run_gui
+                raise SystemExit(run_gui())
+        except ImportError:
+            pass
+
     original_stdout = sys.stdout
     original_stderr = sys.stderr
     log_file = start_session_logging()
