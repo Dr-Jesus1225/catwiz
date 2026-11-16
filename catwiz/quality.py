@@ -2,6 +2,7 @@
 
 import yt_dlp
 
+from .cookies import apply_browser_cookies
 from .utils import QuietLogger, log_error
 
 FORMAT_SORT = ['res', 'vcodec:h264', 'acodec:aac']
@@ -27,7 +28,7 @@ def resolve_quality(url, fmt):
         'logger': QuietLogger(),
     }
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
+        with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
             data = ydl.extract_info(url, download=False)
     except Exception as e:
         log_error(url, f"could not resolve quality: {e}")
