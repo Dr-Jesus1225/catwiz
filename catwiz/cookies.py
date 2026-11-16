@@ -22,14 +22,13 @@ def selected_browser():
 
 def apply_browser_cookies(options):
     """Use browser cookies and a locally installed CA bundle when available."""
-    # Prefer certifi's maintained Mozilla root bundle without disabling TLS checks.
+    # Keep normal certificate verification enabled. yt-dlp uses certifi by
+    # default when installed; do not inject unsupported CA parameters here.
     try:
         import certifi
-        options.setdefault('compat_opts', set()).add('no-certifi')
-        options.setdefault('ca_certs', certifi.where())
+        write_diagnostic(f"Using certifi CA bundle: {certifi.where()}")
     except ImportError:
-        # yt-dlp retains its own secure certificate defaults.
-        pass
+        write_diagnostic("certifi is not installed; yt-dlp will use its default CA bundle.")
     except OSError as error:
         write_diagnostic(f"Could not locate certificate bundle: {error}")
 
