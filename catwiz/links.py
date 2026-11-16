@@ -7,7 +7,7 @@ import yt_dlp
 from .ui import CYAN, RED, RESET, YELLOW, ask_proceed, print_green
 from .cookies import apply_browser_cookies
 from .utils import format_duration
-from .session_log import logged_yt_dlp_call, write_diagnostic
+from .session_log import run_yt_dlp, write_diagnostic
 
 def is_valid_yt_url(url):
     pattern = r'^(https?://)?((www|m|music)\.)?(youtube\.com/(watch\?|playlist\?|shorts/|live/|embed/)|youtu\.be/)[^\s]+$'
@@ -21,10 +21,12 @@ def fetch_playlist_info(url):
         'extractor_args': {'youtubetab': {'skip': ['authcheck']}},
         'extract_flat': True,
     }
-    with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
-        try:
-            info = logged_yt_dlp_call(ydl.extract_info, url, download=False)
-        except Exception as error:
+    def extract(ydl):
+        return ydl.extract_info(url, download=False)
+
+    try:
+        info = run_yt_dlp(apply_browser_cookies(opts), extract)
+    except Exception as error:
             write_diagnostic(f"yt-dlp extraction error: {error}")
             print("Could not read the playlist. See logs.txt for technical details.", file=sys.stderr)
             return None
@@ -180,10 +182,12 @@ def fetch_info(url):
         'no_warnings': False,
         'verbose': True,
     }
-    with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_info_opts)) as ydl:
-        try:
-            return logged_yt_dlp_call(ydl.extract_info, url, download=False)
-        except Exception as error:
+    def extract(ydl):
+        return ydl.extract_info(url, download=False)
+
+    try:
+        return run_yt_dlp(apply_browser_cookies(ydl_info_opts), extract)
+    except Exception as error:
             write_diagnostic(f"yt-dlp extraction error: {error}")
             print("Could not read this video. See logs.txt for technical details.", file=sys.stderr)
             return None
@@ -195,15 +199,17 @@ def fetch_playlist_entries(url):
         'verbose': True,
         'extract_flat': True,
     }
-    with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_opts)) as ydl:
-        try:
-            info = logged_yt_dlp_call(ydl.extract_info, url, download=False)
-            if not info:
-                return []
-            if 'entries' in info:
-                return [entry['url'] for entry in info['entries'] if entry]
-            return [url]
-        except Exception as error:
+    def extract(ydl):
+        info = ydl.extract_info(url, download=False)
+        if not info:
+            return []
+        if 'entries' in info:
+            return [entry['url'] for entry in info['entries'] if entry]
+        return [url]
+
+    try:
+        return run_yt_dlp(apply_browser_cookies(ydl_opts), extract)
+    except Exception as error:
             write_diagnostic(f"yt-dlp extraction error: {error}")
             print("Could not read playlist items. Check logs.txt for diagnostics.")
             return []
