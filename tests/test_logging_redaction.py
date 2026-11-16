@@ -15,9 +15,10 @@ class RedactionTests(unittest.TestCase):
         self.assertIn("Authorization: [REDACTED]", result)
 
     def test_secret_assignments_are_redacted(self):
-        result = redact_text("api_token=abc123 password=hunter2")
+        result = redact_text("api_token=abc123 password=hunter2 access_token=secret-value")
         self.assertNotIn("abc123", result)
         self.assertNotIn("hunter2", result)
+        self.assertNotIn("secret-value", result)
 
     def test_url_credentials_and_query_values_are_removed(self):
         result = redact_text("https://user:password@example.test/video?token=abc&v=123")
