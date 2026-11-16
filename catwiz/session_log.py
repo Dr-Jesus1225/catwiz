@@ -147,8 +147,7 @@ def logged_yt_dlp_call(callback, *args, **kwargs):
         def write(self, value):
             if value:
                 clean = _ANSI_ESCAPE.sub("", str(value))
-                for line in clean.splitlines():
-                    _ACTIVE_LOG.write(f"{_timestamp()} [YT-DLP] {line}\n")
+                _ACTIVE_LOG.write(clean)
                 _ACTIVE_LOG.flush()
             return len(value)
 
