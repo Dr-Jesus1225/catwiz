@@ -219,6 +219,65 @@ def last_line(text):
     return lines[-1] if lines else ''
 
 
+
+def ensure_deno():
+    """Ensure a supported Deno runtime is available for yt-dlp's YouTube EJS solver."""
+    minimum = (2, 3, 0)
+
+    def version():
+        path = shutil.which('deno')
+        if not path:
+            return None
+        ok, output = run_capture([path, '--version'])
+        match = re.search(r'^deno\\s+(\\d+)\\.(\\d+)\\.(\\d+)', output, re.MULTILINE) if ok else None
+        return tuple(map(int, match.groups())) if match else None
+
+    current = version()
+    if current and current >= minimum:
+        return True
+
+    key = platform_key()
+    if key == 'mac':
+        brew = find_brew()
+        command = [brew, 'install', 'deno'] if brew else ['bash', '-lc', 'curl -fsSL https://deno.land/install.sh | sh']
+    elif key == 'termux':
+        command = ['pkg', 'install', '-y', 'deno']
+    elif key == 'linux':
+        command = ['bash', '-lc', 'curl -fsSL https://deno.land/install.sh | sh']
+    else:
+        command = ['winget', 'install', '--id', 'DenoLand.Deno', '-e', '--silent',
+                   '--accept-package-agreements', '--accept-source-agreements']
+
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, errors='replace', timeout=600)
+        deno_dir = os.path.join(os.path.expanduser('~'), '.deno', 'bin')
+        if os.path.isdir(deno_dir) and deno_dir not in os.environ.get('PATH', '').split(os.pathsep):
+            os.environ['PATH'] = deno_dir + os.pathsep + os.environ.get('PATH', '')
+        current = version()
+        if result.returncode == 0 and current and current >= minimum:
+            try:
+                from .logging_service import log_activity
+                log_activity('Deno JavaScript runtime installed or verified', component='setup')
+            except Exception:
+                pass
+            return True
+        detail = (result.stderr or result.stdout or '').strip().splitlines()
+        reason = detail[-1][:240] if detail else 'installer did not provide a supported Deno runtime'
+        try:
+            from .logging_service import component_logger
+            component_logger('setup').warning('Could not install Deno: %s', reason)
+        except Exception:
+            pass
+        return False
+    except Exception:
+        try:
+            from .logging_service import component_logger
+            component_logger('setup').exception('Deno setup failed')
+        except Exception:
+            pass
+        return False
+
+
 def get_auto_update_check():
     """Return whether startup update checks are enabled (off by default)."""
     try:
