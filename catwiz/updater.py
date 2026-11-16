@@ -36,16 +36,26 @@ def update_program():
 
 def update_ytdlp():
     before = ytdlp_version()
-    cmd = [sys.executable, '-m', 'pip', 'install', '-U', 'yt-dlp', 'certifi']
+    cmd = [sys.executable, '-m', 'pip', 'install', '--upgrade', 'yt-dlp', 'certifi']
     ok, out = run_capture(cmd)
     if not ok and 'externally-managed' in out.lower() and not in_venv():
         ok, out = run_capture(cmd + ['--break-system-packages'])
     if not ok:
         return 'failed', last_line(out)[:140]
+
+    # Verify certifi using the exact interpreter running CatWiz. A successful
+    # yt-dlp version check alone does not prove the optional CA bundle exists.
+    cert_ok, cert_out = run_capture([
+        sys.executable, '-c',
+        'import certifi; print(certifi.where())'
+    ])
+    if not cert_ok:
+        return 'failed', 'certifi was not installed in CatWiz Python: ' + last_line(cert_out)[:100]
+
     after = ytdlp_version()
     if before and after and before != after:
-        return 'changed', f"{before} -> {after}"
-    return 'same', f"already up to date ({after or before or 'unknown version'})"
+        return 'changed', f"{before} -> {after}; certifi ready"
+    return 'same', f"yt-dlp already up to date ({after or before or 'unknown'}); certifi ready"
 
 def run_step(label, cmd, same_texts=()):
     print(f"Updating {label}... ", end='', flush=True)
