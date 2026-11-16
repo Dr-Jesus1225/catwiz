@@ -216,7 +216,7 @@ def main():
         if failed:
             print(
                 f"{YELLOW}Finished: {saved} saved, "
-                f"{failed} failed (details in errors.log){RESET}"
+                f"{failed} failed (review CatWiz logs for details){RESET}"
             )
         else:
             print_green(f"Finished: all {saved} saved")
