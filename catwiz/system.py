@@ -232,6 +232,10 @@ def ensure_deno():
         match = re.search(r'^deno\s+(\d+)\.(\d+)\.(\d+)', output, re.MULTILINE) if ok else None
         return tuple(map(int, match.groups())) if match else None
 
+    deno_dir = os.path.join(os.path.expanduser('~'), '.deno', 'bin')
+    if os.path.isdir(deno_dir) and deno_dir not in os.environ.get('PATH', '').split(os.pathsep):
+        os.environ['PATH'] = deno_dir + os.pathsep + os.environ.get('PATH', '')
+
     current = version()
     if current and current >= minimum:
         return True
