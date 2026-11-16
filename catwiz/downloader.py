@@ -24,7 +24,7 @@ from .utils import (
     safe_remove,
     short_reason,
 )
-from .session_log import logged_yt_dlp_call, write_diagnostic
+from .session_log import run_yt_dlp, write_diagnostic
 
 CURRENT_ITEM = {'safe_title': None}
 
@@ -596,11 +596,14 @@ def download_thumbnail_file(item_url, safe_title):
         'outtmpl': safe_title.replace('%', '%%'),
     }
 
-    with yt_dlp.YoutubeDL(apply_browser_cookies(thumb_opts)) as ydl:
-        try:
-            logged_yt_dlp_call(ydl.download, [item_url])
-        except Exception as e:
-            log_error(item_url, f"thumbnail download failed: {e}")
+    def download_thumbnail(ydl):
+        return ydl.download([item_url])
+
+    try:
+        run_yt_dlp(apply_browser_cookies(thumb_opts), download_thumbnail)
+    except Exception as e:
+        write_diagnostic(f"thumbnail yt-dlp error: {e}")
+        log_error(item_url, f"thumbnail download failed: {e}")
 
     for ext in ['.webp', '.jpg', '.png']:
         if os.path.exists(f"{safe_title}{ext}"):
@@ -1175,8 +1178,10 @@ def _process_single_item(
         }
 
     try:
-        with yt_dlp.YoutubeDL(apply_browser_cookies(dl_opts)) as ydl:
-            logged_yt_dlp_call(ydl.download, [item_url])
+        def download_media(ydl):
+            return ydl.download([item_url])
+
+        run_yt_dlp(apply_browser_cookies(dl_opts), download_media)
 
     except Exception as e:
         print()
