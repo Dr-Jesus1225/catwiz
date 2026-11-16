@@ -210,7 +210,7 @@ class CatWizWindow(QMainWindow):
             try:
                 archived = sorted(os.listdir(paths["archive"]), reverse=True)
                 for name in archived:
-                    if name.endswith(".log"):
+                    if name.startswith(("activity.log.", "diagnostics.log.", "errors.log.")):
                         with open(os.path.join(paths["archive"], name), "r", encoding="utf-8", errors="replace") as stream:
                             lines.extend(stream.readlines())
             except OSError:
