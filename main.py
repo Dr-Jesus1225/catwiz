@@ -2,7 +2,7 @@
 import sys
 
 from catwiz.app import main
-from catwiz.session_log import start_session_logging
+from catwiz.session_log import start_session_logging, stop_session_logging
 
 
 def run():
@@ -22,7 +22,7 @@ def run():
             finally:
                 sys.stdout = original_stdout
                 sys.stderr = original_stderr
-                log_file.close()
+                stop_session_logging(log_file)
 
 
 if __name__ == '__main__':
