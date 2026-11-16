@@ -173,9 +173,9 @@ def get_validated_url(is_playlist, mode):
 
 def fetch_info(url):
     ydl_info_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'logger': QuietLogger(),
+        'quiet': False,
+        'no_warnings': False,
+        'verbose': True,
     }
     with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_info_opts)) as ydl:
         try:
