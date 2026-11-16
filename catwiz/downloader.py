@@ -1169,7 +1169,7 @@ def _process_single_item(
                 }
             ],
             'progress_hooks': [progress_hook],
-            'quiet': False,
+            'quiet': True,
             'no_warnings': False,
             'verbose': True,
         }
