@@ -7,6 +7,7 @@ import re
 import subprocess
 
 from .ui import RED, RESET
+from .session_log import write_diagnostic
 
 PROGRAM_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the folder that holds main.py
 ERROR_LOG = os.path.join(PROGRAM_DIR, 'errors.log')
@@ -46,6 +47,11 @@ def run_ffmpeg(cmd):
         return False, 'ffmpeg not found'
     except OSError as e:
         return False, short_reason(e)
+    if r.stderr:
+        write_diagnostic(f"FFmpeg command: {cmd!r}")
+        for detail in r.stderr.splitlines():
+            write_diagnostic(detail)
+    write_diagnostic(f"FFmpeg exited with code {r.returncode}")
     if r.returncode == 0:
         return True, ''
     lines = [l.strip() for l in (r.stderr or '').splitlines() if l.strip()]
