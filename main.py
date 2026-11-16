@@ -4,25 +4,33 @@ import sys
 
 from catwiz.app import main
 from catwiz.session_log import start_session_logging, stop_session_logging
+from catwiz.logging_service import close_logging, component_logger, get_logger, log_activity
 
 RESTART_EXIT_CODE = 75
 
 
 def run():
+    get_logger()
     # Prefer the desktop GUI when PySide6 is installed. The CLI remains
-    # available everywhere through the --cli argument and as a fallback.
+    # available everywhere through --cli and as a dependency fallback.
     if "--cli" not in sys.argv:
         try:
             from catwiz.system import platform_key
             if platform_key() != "termux":
                 from gui.app import run as run_gui
-                raise SystemExit(run_gui())
+                log_activity("Desktop application started", component="gui")
+                try:
+                    return run_gui()
+                except Exception:
+                    component_logger("gui").exception("Unhandled desktop application error")
+                    raise
+                finally:
+                    log_activity("Desktop application closed", component="gui")
+                    close_logging()
         except ImportError:
-            pass
+            component_logger("startup").info("GUI dependencies unavailable; using CLI")
 
-    original_stdout = sys.stdout
-    original_stderr = sys.stderr
-    log_file = start_session_logging()
+    log_handle = start_session_logging()
     restart = False
     try:
         try:
@@ -35,19 +43,13 @@ def run():
             else:
                 raise
     finally:
-        if log_file:
-            try:
-                sys.stdout.flush()
-                sys.stderr.flush()
-            finally:
-                sys.stdout = original_stdout
-                sys.stderr = original_stderr
-                stop_session_logging(log_file)
+        stop_session_logging(log_handle)
+        close_logging()
 
     if restart:
         # Replace this process so updated modules are loaded from disk.
         os.execv(sys.executable, [sys.executable, os.path.abspath(__file__)])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
