@@ -1,6 +1,7 @@
 """Compatibility wrappers routing existing CLI and yt-dlp diagnostics centrally."""
 
 from .logging_service import component_logger, get_logger, log_activity
+from .logging_context import new_download_id, set_download_id, reset_context
 
 
 def start_session_logging():
@@ -41,6 +42,7 @@ def run_yt_dlp(options, action, *args, **kwargs):
 
     options = dict(options)
     options.setdefault("logger", YtDlpSessionLogger())
+    download_token = set_download_id(new_download_id())
     log_activity("Downloader operation started", component="downloader")
     try:
         with yt_dlp.YoutubeDL(options) as ydl:
@@ -51,3 +53,5 @@ def run_yt_dlp(options, action, *args, **kwargs):
         component_logger("downloader").exception("Downloader operation failed")
         log_activity("Downloader operation failed", component="downloader", level=40)
         raise
+    finally:
+        reset_context(download_token, kind="download")
