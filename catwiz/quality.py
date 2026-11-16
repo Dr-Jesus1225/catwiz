@@ -4,7 +4,7 @@ import yt_dlp
 
 from .cookies import apply_browser_cookies
 from .utils import log_error
-from .session_log import logged_yt_dlp_call, write_diagnostic
+from .session_log import run_yt_dlp, write_diagnostic
 
 FORMAT_SORT = ['res', 'vcodec:h264', 'acodec:aac']
 
@@ -29,8 +29,10 @@ def resolve_quality(url, fmt):
         'format_sort': FORMAT_SORT,
     }
     try:
-        with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
-            data = logged_yt_dlp_call(ydl.extract_info, url, download=False)
+        def extract(ydl):
+            return ydl.extract_info(url, download=False)
+
+        data = run_yt_dlp(apply_browser_cookies(opts), extract)
     except Exception as e:
         write_diagnostic(f"yt-dlp quality lookup error: {e}")
         log_error(url, f"could not resolve quality: {e}")
