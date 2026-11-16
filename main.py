@@ -16,6 +16,8 @@ def run():
     if "--cli" not in sys.argv:
         from catwiz.system import platform_key, ensure_deno
         ensure_deno()
+        from catwiz.youtube_support import ensure_youtube_support
+        ensure_youtube_support()
         if platform_key() != "termux":
             try:
                 from gui.app import run as run_gui
@@ -34,6 +36,8 @@ def run():
 
     from catwiz.system import ensure_deno
     ensure_deno()
+    from catwiz.youtube_support import ensure_youtube_support
+    ensure_youtube_support()
     log_handle = start_session_logging()
     restart = False
     try:
