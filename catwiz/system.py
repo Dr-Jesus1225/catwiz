@@ -214,6 +214,34 @@ def last_line(text):
     return lines[-1] if lines else ''
 
 
+def get_auto_update_check():
+    """Return whether startup update checks are enabled (off by default)."""
+    try:
+        with open(get_config_file(), 'r', encoding='utf-8') as stream:
+            config = json.load(stream)
+        return bool(config.get('auto_update_check', False)) if isinstance(config, dict) else False
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def set_auto_update_check(enabled):
+    """Persist the startup update-check preference without changing other settings."""
+    config_file = get_config_file()
+    try:
+        with open(config_file, 'r', encoding='utf-8') as stream:
+            config = json.load(stream)
+        if not isinstance(config, dict):
+            config = {}
+    except (OSError, ValueError, TypeError):
+        config = {}
+    config['auto_update_check'] = bool(enabled)
+    temporary = config_file + '.tmp'
+    with open(temporary, 'w', encoding='utf-8') as stream:
+        json.dump(config, stream, indent=4)
+        stream.write('\\n')
+    os.replace(temporary, config_file)
+
+
 def get_shortcut_settings():
     """Return (shortcut, case_sensitive), preserving the default for old configs."""
     try:
