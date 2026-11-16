@@ -134,6 +134,16 @@ def update_system_packages():
             results.append('failed')
     return results
 
+def update_catwiz_only():
+    """Update only the CatWiz program; leave yt-dlp and system packages alone."""
+    print(f"\n{CYAN}--------------------------------------{RESET}")
+    print(" Updating CatWiz only")
+    print(f"{CYAN}--------------------------------------{RESET}")
+    st, msg = update_program()
+    show_status(st, msg)
+    return [st]
+
+
 def update_necessary():
     print(f"\n{CYAN}--------------------------------------{RESET}")
     print(" Updating what's necessary")
@@ -190,13 +200,14 @@ def update_menu():
     print(" Update")
     print("  1. Update what's necessary (CatWiz and yt-dlp)")
     print("  2. Update everything (also FFmpeg, Python and Git)")
+    print("  3. Update CatWiz only")
     print("  0. Back")
     print(f"{CYAN}--------------------------------------{RESET}")
     attempts = 0
     choice = None
     while attempts < max_attempts:
-        choice = input(f"{YELLOW}Select option [1/2/0]:{RESET} ").strip()
-        if choice in ('0', '1', '2'):
+        choice = input(f"{YELLOW}Select option [1/2/3/0]:{RESET} ").strip()
+        if choice in ('0', '1', '2', '3'):
             break
         attempts += 1
         if attempts < max_attempts:
@@ -206,7 +217,12 @@ def update_menu():
             sys.exit(1)
     if choice == '0':
         return
-    statuses = update_necessary() if choice == '1' else update_everything()
+    if choice == '1':
+        statuses = update_necessary()
+    elif choice == '2':
+        statuses = update_everything()
+    else:
+        statuses = update_catwiz_only()
     if statuses is None:
         return
     print()
