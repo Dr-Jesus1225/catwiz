@@ -150,7 +150,7 @@ fi
 
 # ---- yt-dlp and the configured CatWiz shortcut ----
 if [ "$OS" = termux ]; then
-  python -m pip install -U 'yt-dlp[default]' certifi || fail "Could not install yt-dlp and certificate bundle"
+  python -m pip install -U 'yt-dlp[default]' certifi bgutil-ytdlp-pot-provider || fail "Could not install yt-dlp and certificate bundle"
   PYTHON_BIN=python
   pkg install -y deno || fail "Could not install Deno JavaScript runtime"
   SHORTCUT_DIR="$PREFIX/bin"
@@ -161,7 +161,7 @@ if [ "$OS" = termux ]; then
   fi
 else
   [ -x "$DIR/.venv/bin/python" ] || python3 -m venv "$DIR/.venv" || fail "Could not create the Python environment"
-  "$DIR/.venv/bin/pip" install -U "yt-dlp[default]" certifi PySide6 || fail "Could not install yt-dlp, certificates and desktop GUI"
+  "$DIR/.venv/bin/pip" install -U "yt-dlp[default]" certifi bgutil-ytdlp-pot-provider PySide6 || fail "Could not install yt-dlp, certificates and desktop GUI"
   PYTHON_BIN="$DIR/.venv/bin/python"
   if [ "$OS" = mac ]; then
     brew install deno || fail "Could not install Deno JavaScript runtime"
