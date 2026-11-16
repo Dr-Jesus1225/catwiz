@@ -113,11 +113,10 @@ def _install_input_logging():
 
 def stop_session_logging(log_file):
     """Restore process streams and close this session's log."""
-    global _ORIGINAL_INPUT
+    global _ACTIVE_LOG, _ORIGINAL_INPUT
     if _ORIGINAL_INPUT is not None:
         builtins.input = _ORIGINAL_INPUT
         _ORIGINAL_INPUT = None
-    global _ACTIVE_LOG
     if log_file:
         try:
             sys.stdout.flush()
