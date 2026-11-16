@@ -254,7 +254,7 @@ def change_download_location():
 def toggle_startup_update_check():
     enabled = get_auto_update_check()
     state = "ON" if enabled else "OFF"
-    print(f"\\nCheck for updates on startup: {state}")
+    print(f"\nCheck for updates on startup: {state}")
     action = "off" if enabled else "on"
     if ask_yes_no(f"Turn {action}?"):
         set_auto_update_check(not enabled)
