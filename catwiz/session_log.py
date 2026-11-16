@@ -159,12 +159,8 @@ def logged_yt_dlp_call(callback, *args, **kwargs):
             return True
 
     sink = LogSink()
-    try:
-        with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
-            return callback(*args, **kwargs)
-    finally:
-        # contextlib restores the exact original application tee streams.
-        pass
+    with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
+        return callback(*args, **kwargs)
 
 
 def run_yt_dlp(options, action, *args, **kwargs):
