@@ -18,7 +18,6 @@ def fetch_playlist_info(url):
         'quiet': True,
         'no_warnings': False,
         'verbose': True,
-        'extractor_args': {'youtubetab': {'skip': ['authcheck']}},
         'extract_flat': True,
     }
     def extract(ydl):
@@ -27,7 +26,7 @@ def fetch_playlist_info(url):
     try:
         info = run_yt_dlp(apply_browser_cookies(opts), extract)
     except Exception as error:
-            write_diagnostic(f"yt-dlp extraction error: {error}")
+        write_diagnostic(f"yt-dlp extraction error: {error}")
             print("Could not read the playlist. See logs.txt for technical details.", file=sys.stderr)
             return None
     if not info:
