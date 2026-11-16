@@ -33,9 +33,9 @@ def export_diagnostics(kind="full"):
     except OSError:
         archived = []
     if kind == "full":
-        sources.extend((f"archive/{name}", os.path.join(paths["archive"], name)) for name in archived if name.endswith(".log"))
+        sources.extend((f"archive/{name}", os.path.join(paths["archive"], name)) for name in archived if name.startswith(("activity.log.", "diagnostics.log.", "errors.log.")))
     else:
-        sources.extend((f"archive/{name}", os.path.join(paths["archive"], name)) for name in archived if name.startswith("errors.log.") and name.endswith(".log"))
+        sources.extend((f"archive/{name}", os.path.join(paths["archive"], name)) for name in archived if name.startswith("errors.log."))
 
     try:
         with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
