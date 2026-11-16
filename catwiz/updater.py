@@ -40,7 +40,7 @@ def update_program():
 
 def update_ytdlp():
     before = ytdlp_version()
-    cmd = [sys.executable, '-m', 'pip', 'install', '--upgrade', 'yt-dlp', 'certifi']
+    cmd = [sys.executable, '-m', 'pip', 'install', '--upgrade', 'yt-dlp[default]', 'certifi']
     ok, out = run_capture(cmd)
     if not ok and 'externally-managed' in out.lower() and not in_venv():
         ok, out = run_capture(cmd + ['--break-system-packages'])
@@ -52,10 +52,10 @@ def update_ytdlp():
     # yt-dlp version check alone does not prove the optional CA bundle exists.
     cert_ok, cert_out = run_capture([
         sys.executable, '-c',
-        'import certifi; print(certifi.where())'
+        'import certifi, yt_dlp_ejs; print(certifi.where())'
     ])
     if not cert_ok:
-        return 'failed', 'certifi was not installed in CatWiz Python: ' + last_line(cert_out)[:100]
+        return 'failed', 'yt-dlp EJS or certifi is missing from CatWiz Python: ' + last_line(cert_out)[:100]
 
     after = ytdlp_version()
     if before and after and before != after:
