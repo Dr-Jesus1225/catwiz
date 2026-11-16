@@ -26,7 +26,7 @@ def apply_browser_cookies(options):
     # Never disable TLS verification. Prefer Python's default CA store.
     try:
         default_paths = ssl.get_default_verify_paths()
-        if not default_paths.cafile and not default_paths.capath:
+        if not default_paths.cafile or not os.path.exists(default_paths.cafile):
             import certifi
             options.setdefault('nocheckcertificate', False)
             options.setdefault('ca_certs', certifi.where())
