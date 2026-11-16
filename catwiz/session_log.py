@@ -135,6 +135,40 @@ def write_diagnostic(message):
         _ACTIVE_LOG.flush()
 
 
+def logged_yt_dlp_call(callback, *args, **kwargs):
+    """Run third-party downloader code with stdout/stderr isolated to logs."""
+    if not _ACTIVE_LOG:
+        return callback(*args, **kwargs)
+
+    class LogSink:
+        encoding = "utf-8"
+        errors = "replace"
+
+        def write(self, value):
+            if value:
+                clean = _ANSI_ESCAPE.sub("", str(value))
+                for line in clean.splitlines():
+                    _ACTIVE_LOG.write(f"{_timestamp()} [YT-DLP] {line}\n")
+                _ACTIVE_LOG.flush()
+            return len(value)
+
+        def flush(self):
+            _ACTIVE_LOG.flush()
+
+        def isatty(self):
+            return False
+
+        def writable(self):
+            return True
+
+    stdout, stderr = sys.stdout, sys.stderr
+    try:
+        sys.stdout, sys.stderr = LogSink(), LogSink()
+        return callback(*args, **kwargs)
+    finally:
+        sys.stdout, sys.stderr = stdout, stderr
+
+
 def start_session_logging():
     """Overwrite logs.txt and capture timestamped output and user input."""
     global _ACTIVE_LOG
