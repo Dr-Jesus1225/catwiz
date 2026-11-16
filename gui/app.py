@@ -163,7 +163,7 @@ class CatWizWindow(QMainWindow):
         layout.addLayout(self._heading("Logs", "Review CatWiz activity and technical diagnostics stored locally."))
         controls = QHBoxLayout()
         self.log_type = QComboBox()
-        self.log_type.addItems(["Activity", "Diagnostics", "Errors"])
+        self.log_type.addItems(["Activity", "Diagnostics", "Errors", "Archived history"])
         self.log_type.currentIndexChanged.connect(self._refresh_logs)
         self.log_search = QLineEdit()
         self.log_search.setPlaceholderText("Search log messages…")
@@ -204,13 +204,25 @@ class CatWizWindow(QMainWindow):
         from catwiz.logging_service import get_log_paths, get_logger
         get_logger()
         paths = get_log_paths()
-        key = ("activity", "diagnostics", "errors")[self.log_type.currentIndex()]
-        path = paths[key]
-        try:
-            with open(path, "r", encoding="utf-8", errors="replace") as stream:
-                lines = stream.readlines()[-1500:]
-        except OSError:
+        index = self.log_type.currentIndex()
+        if index == 3:
             lines = []
+            try:
+                archived = sorted(os.listdir(paths["archive"]), reverse=True)
+                for name in archived:
+                    if name.endswith(".log"):
+                        with open(os.path.join(paths["archive"], name), "r", encoding="utf-8", errors="replace") as stream:
+                            lines.extend(stream.readlines())
+            except OSError:
+                pass
+            lines = lines[-3000:]
+        else:
+            key = ("activity", "diagnostics", "errors")[index]
+            try:
+                with open(paths[key], "r", encoding="utf-8", errors="replace") as stream:
+                    lines = stream.readlines()[-1500:]
+            except OSError:
+                lines = []
         query = self.log_search.text().strip().lower()
         level = self.log_level.currentText().upper()
         if level == "ALL LEVELS":
