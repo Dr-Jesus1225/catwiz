@@ -9,59 +9,40 @@ from .ui import CYAN, RESET, YELLOW, print_green
 
 
 def select_video_quality(info, is_playlist, with_audio=True):
+    # Standard choices are always shown. Higher-than-1080p choices are
+    # added only when the inspected metadata exposes them.
+    standard_heights = [144, 240, 360, 480, 720, 1080]
     found = set()
 
     def collect_resolutions(video_info):
         if not isinstance(video_info, dict):
             return
-
         for fmt in video_info.get('formats', []):
             if fmt.get('vcodec') == 'none':
                 continue
-
             height = fmt.get('height')
-
-            if isinstance(height, int) and height > 0:
+            if isinstance(height, int) and height > 1080:
                 found.add(height)
-
         if is_playlist:
             for entry in video_info.get('entries') or []:
                 collect_resolutions(entry)
 
     collect_resolutions(info)
+    heights = standard_heights + sorted(found)
+    options = [
+        (f"{height}p", {"type": "requested", "height": height})
+        for height in heights
+    ]
 
-    heights = sorted(found)
-    options = []
-
-    for index, height in enumerate(heights):
-        label = f"{height}p"
-
-        if index == len(heights) - 1:
-            label += " (Best quality)"
-
-        options.append((
-            label,
-            make_video_format(height, with_audio)
-        ))
-
-    if not options:
-        options.append((
-            "Best available (Best quality)",
-            make_video_format(None, with_audio)
-        ))
-
-    print(f"\n{CYAN}--------------------------------------{RESET}")
+    print(f"\\n{CYAN}--------------------------------------{RESET}")
     print(" Select Video Quality:")
-
     for idx, (label, _) in enumerate(options, 1):
         print(f"  {idx}. {label}")
-
     print("  W. Custom resolution")
     print("  0. Cancel")
     print(f"{CYAN}--------------------------------------{RESET}")
 
     attempts = 0
-
     while attempts < 3:
         choice = input(
             f"{YELLOW}Select option [1-{len(options)}/W/0]:{RESET} "
@@ -75,20 +56,13 @@ def select_video_quality(info, is_playlist, with_audio=True):
             resolution = input(
                 f"{YELLOW}Enter custom resolution (WIDTHxHEIGHT):{RESET} "
             ).strip()
-
             if resolution == '0':
                 print_green("Operation cancelled.")
                 sys.exit(0)
-
-            match = re.fullmatch(
-                r"(\d+)\s*[xX×]\s*(\d+)",
-                resolution
-            )
-
+            match = re.fullmatch(r"(\\d+)\\s*[xX×]\\s*(\\d+)", resolution)
             if match:
                 width = int(match.group(1))
                 height = int(match.group(2))
-
                 if (
                     2 <= width <= 16384
                     and 2 <= height <= 16384
@@ -100,7 +74,6 @@ def select_video_quality(info, is_playlist, with_audio=True):
                         "width": width,
                         "height": height
                     }, f"{width}x{height} (Custom)"
-
             print_green(
                 "Invalid resolution. Use even dimensions, e.g. 1920x1080."
             )
@@ -108,19 +81,14 @@ def select_video_quality(info, is_playlist, with_audio=True):
             continue
 
         if choice.isdigit() and 1 <= int(choice) <= len(options):
-            return (
-                options[int(choice) - 1][1],
-                options[int(choice) - 1][0]
-            )
+            return options[int(choice) - 1][1], options[int(choice) - 1][0]
 
         attempts += 1
-
         if attempts < 3:
             print_green("Invalid selection.")
         else:
             print_green("Too many invalid attempts. Exiting.")
             sys.exit(1)
-
 
 def select_audio_quality(info, is_playlist):
     options = [
