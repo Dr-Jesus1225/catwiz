@@ -25,7 +25,7 @@ def _install_exception_hooks():
                       exc_info=(exc_type, exc_value, traceback),
                       extra={"component": "uncaught"})
         try:
-            sys.__stderr__.write("CatWiz encountered an unexpected error. Details were saved in ~/.catwiz/logs/errors.log.\\n")
+            sys.__stderr__.write("CatWiz encountered an unexpected error. Details were saved in ~/.catwiz/logs/errors.log.\n")
         except Exception:
             pass
 
