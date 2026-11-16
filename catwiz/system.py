@@ -229,7 +229,7 @@ def ensure_deno():
         if not path:
             return None
         ok, output = run_capture([path, '--version'])
-        match = re.search(r'^deno\\s+(\\d+)\\.(\\d+)\\.(\\d+)', output, re.MULTILINE) if ok else None
+        match = re.search(r'^deno\s+(\d+)\.(\d+)\.(\d+)', output, re.MULTILINE) if ok else None
         return tuple(map(int, match.groups())) if match else None
 
     current = version()
