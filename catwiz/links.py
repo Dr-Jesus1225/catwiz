@@ -26,7 +26,7 @@ def fetch_playlist_info(url):
         info = run_yt_dlp(apply_browser_cookies(opts), extract)
     except Exception as error:
         write_diagnostic(f"yt-dlp extraction error: {error}")
-        print("Could not read the playlist. Check the connection or certificate settings.", file=sys.stderr)
+        print("Could not connect securely to YouTube. Check logs.txt for details.")
         return None
     if not info:
         return None
@@ -187,7 +187,7 @@ def fetch_info(url):
         return run_yt_dlp(apply_browser_cookies(ydl_info_opts), extract)
     except Exception as error:
         write_diagnostic(f"yt-dlp extraction error: {error}")
-        print("Could not read this video. Check the connection or certificate settings.", file=sys.stderr)
+        print("Could not connect securely to YouTube. Check logs.txt for details.")
         return None
 
 def fetch_playlist_entries(url):
@@ -209,5 +209,5 @@ def fetch_playlist_entries(url):
         return run_yt_dlp(apply_browser_cookies(ydl_opts), extract)
     except Exception as error:
         write_diagnostic(f"yt-dlp extraction error: {error}")
-        print("Could not read playlist items. Check the connection or certificate settings.")
+        print("Could not connect securely to YouTube. Check logs.txt for details.")
         return []
