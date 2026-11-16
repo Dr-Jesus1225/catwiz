@@ -2,9 +2,11 @@
 
 import json
 import os
+import ssl
 
 from .system import get_config_file
 from .ui import print_green
+from .session_log import write_diagnostic
 
 BROWSERS = ('chrome', 'firefox', 'edge', 'brave', 'chromium', 'opera', 'vivaldi', 'safari')
 
@@ -20,7 +22,17 @@ def selected_browser():
 
 
 def apply_browser_cookies(options):
-    """Use yt-dlp's built-in browser cookie loader, without exporting secrets."""
+    """Use browser cookies and a locally installed CA bundle when available."""
+    # Never disable TLS verification. Prefer Python's default CA store.
+    try:
+        default_paths = ssl.get_default_verify_paths()
+        if not default_paths.cafile and not default_paths.capath:
+            import certifi
+            options.setdefault('nocheckcertificate', False)
+            options.setdefault('ca_certs', certifi.where())
+    except (ImportError, OSError) as error:
+        write_diagnostic(f"Could not locate certifi CA bundle: {error}")
+
     browser = selected_browser()
     if browser:
         options['cookiesfrombrowser'] = (browser,)
