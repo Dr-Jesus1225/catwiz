@@ -8,6 +8,7 @@ import shutil
 import sys
 import yt_dlp
 
+from .cookies import apply_browser_cookies
 from .captions import write_sidecar
 from .links import fetch_info
 from .quality import FORMAT_SORT, announce_quality, make_video_format, resolve_quality
@@ -585,7 +586,7 @@ def download_thumbnail_file(item_url, safe_title):
         'logger': QuietLogger(),
     }
 
-    with yt_dlp.YoutubeDL(thumb_opts) as ydl:
+    with yt_dlp.YoutubeDL(apply_browser_cookies(thumb_opts)) as ydl:
         try:
             ydl.download([item_url])
         except Exception as e:
@@ -1164,7 +1165,7 @@ def _process_single_item(
         }
 
     try:
-        with yt_dlp.YoutubeDL(dl_opts) as ydl:
+        with yt_dlp.YoutubeDL(apply_browser_cookies(dl_opts)) as ydl:
             ydl.download([item_url])
 
     except Exception as e:
