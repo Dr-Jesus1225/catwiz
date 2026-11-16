@@ -76,6 +76,11 @@ def set_download_dir(path):
 
     with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
+    try:
+        from .logging_service import log_activity
+        log_activity('Download folder preference updated', component='settings')
+    except Exception:
+        pass
 
 def get_category_dir(category):
     """Return the folder for a download category."""
@@ -240,6 +245,11 @@ def set_auto_update_check(enabled):
         json.dump(config, stream, indent=4)
         stream.write('\n')
     os.replace(temporary, config_file)
+    try:
+        from .logging_service import log_activity
+        log_activity('Startup update-check preference changed', component='settings')
+    except Exception:
+        pass
 
 
 def get_shortcut_settings():
