@@ -1,188 +1,45 @@
-"""Timestamped per-session logging for CatWiz."""
+"""Compatibility wrappers routing existing CLI and yt-dlp diagnostics centrally."""
 
-import builtins
-import os
-import re
-import sys
-import time
-from datetime import datetime
-
-from .system import get_download_dir
-
-_ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
-_MENU_OPTION = re.compile(r"^\s*(-?\d+)\.\s+(.+?)\s*$")
-_ACTIVE_LOG = None
-_ORIGINAL_INPUT = None
-
-
-def _timestamp():
-    now = time.time()
-    whole = time.strftime("%H:%M:%S", time.localtime(now))
-    centiseconds = int((now % 1) * 100)
-    return f"[{whole}.{centiseconds:02d}]"
-
-
-class _TeeStream:
-    """Mirror terminal output and write timestamped, ANSI-free log lines."""
-
-    def __init__(self, terminal, log_file):
-        self.terminal = terminal
-        self.log_file = log_file
-        self.encoding = getattr(terminal, "encoding", None) or "utf-8"
-        self.errors = getattr(terminal, "errors", None) or "replace"
-        self._pending = ""
-        self.menu_options = {}
-
-    def write(self, value):
-        written = self.terminal.write(value)
-        try:
-            clean = _ANSI_ESCAPE.sub("", str(value))
-            self._pending += clean
-            while "\n" in self._pending:
-                line, self._pending = self._pending.split("\n", 1)
-                self._write_line(line)
-            if "\r" in self._pending:
-                parts = self._pending.split("\r")
-                self._pending = parts[-1]
-                for line in parts[:-1]:
-                    if line:
-                        self._write_line(line)
-        except (OSError, UnicodeError):
-            pass
-        return written
-
-    def _write_line(self, line):
-        match = _MENU_OPTION.match(line)
-        if match:
-            self.menu_options[match.group(1)] = match.group(2)
-        self.log_file.write(f"{_timestamp()} {line}\n")
-        self.log_file.flush()
-
-    def log_input(self, prompt, value):
-        clean_prompt = _ANSI_ESCAPE.sub("", str(prompt)).strip()
-        selected = self.menu_options.get(str(value).strip())
-        detail = f"selected={selected!r}; " if selected else ""
-        self.log_file.write(
-            f"{_timestamp()} [USER INPUT] {detail}"
-            f"prompt={clean_prompt!r}; value={value!r}\n"
-        )
-        self.log_file.flush()
-
-    def flush(self):
-        self.terminal.flush()
-        try:
-            if self._pending:
-                self._write_line(self._pending)
-                self._pending = ""
-            self.log_file.flush()
-        except OSError:
-            pass
-
-    def isatty(self):
-        return self.terminal.isatty()
-
-    def fileno(self):
-        return self.terminal.fileno()
-
-    def writable(self):
-        return True
-
-    def __getattr__(self, name):
-        return getattr(self.terminal, name)
-
-
-def _install_input_logging():
-    global _ORIGINAL_INPUT
-    if _ORIGINAL_INPUT is not None:
-        return
-    _ORIGINAL_INPUT = builtins.input
-
-    def logged_input(prompt=""):
-        stream = sys.stdout
-        if prompt:
-            stream.write(str(prompt))
-            stream.flush()
-        value = _ORIGINAL_INPUT()
-        if isinstance(stream, _TeeStream):
-            stream.log_input(prompt, value)
-        return value
-
-    builtins.input = logged_input
-
-
-def stop_session_logging(log_file):
-    """Restore process streams and close this session's log."""
-    global _ACTIVE_LOG, _ORIGINAL_INPUT
-    if _ORIGINAL_INPUT is not None:
-        builtins.input = _ORIGINAL_INPUT
-        _ORIGINAL_INPUT = None
-    if log_file:
-        try:
-            sys.stdout.flush()
-            sys.stderr.flush()
-        finally:
-            log_file.close()
-    _ACTIVE_LOG = None
-
-
-def write_diagnostic(message):
-    """Write an internal diagnostic line to the active session log."""
-    if _ACTIVE_LOG:
-        for line in str(message).splitlines() or [""]:
-            _ACTIVE_LOG.write(f"{_timestamp()} [DIAGNOSTIC] {line}\n")
-        _ACTIVE_LOG.flush()
-
-
-class YtDlpSessionLogger:
-    """Route yt-dlp's internal logger messages to logs.txt only."""
-
-    def debug(self, message):
-        write_diagnostic(f"[yt-dlp debug] {message}")
-
-    def info(self, message):
-        write_diagnostic(f"[yt-dlp info] {message}")
-
-    def warning(self, message):
-        write_diagnostic(f"[yt-dlp warning] {message}")
-
-    def error(self, message):
-        write_diagnostic(f"[yt-dlp error] {message}")
-
-
-
-
-def run_yt_dlp(options, action, *args, **kwargs):
-    """Construct YoutubeDL and execute the action inside the log-only stream."""
-    import yt_dlp
-
-    with yt_dlp.YoutubeDL(options) as ydl:
-        return action(ydl, *args, **kwargs)
+from .logging_service import component_logger, get_logger, log_activity
 
 
 def start_session_logging():
-    """Overwrite logs.txt and capture timestamped output and user input."""
-    global _ACTIVE_LOG
-    try:
-        directory = get_download_dir()
-        os.makedirs(directory, exist_ok=True)
-        path = os.path.join(directory, "logs.txt")
-        log_file = open(path, "w", encoding="utf-8", errors="replace", buffering=1)
-        log_file.write(
-            "CatWiz session log\n"
-            f"Started: {datetime.now().astimezone().isoformat(timespec='seconds')}\n"
-            f"Platform: {sys.platform}\n"
-            "Timestamp format: local HH:MM:SS.centiseconds\n"
-            + "=" * 72 + "\n"
-        )
-        log_file.flush()
-    except OSError as error:
-        print(f"Warning: could not start session logging: {error}", file=sys.stderr)
-        return None
+    """Initialize central logging without capturing terminal output or input."""
+    get_logger()
+    log_activity("CLI session started", component="cli")
+    return True
 
-    _ACTIVE_LOG = log_file
-    terminal_stdout, terminal_stderr = sys.stdout, sys.stderr
-    # Normal CatWiz print/input remains visible on the actual terminal.
-    sys.stdout = _TeeStream(terminal_stdout, log_file)
-    sys.stderr = _TeeStream(terminal_stderr, log_file)
-    _install_input_logging()
-    return log_file
+
+def stop_session_logging(log_handle=None):
+    """Record session end; process shutdown owns handler cleanup."""
+    log_activity("CLI session ended", component="cli")
+
+
+def write_diagnostic(message):
+    component_logger("diagnostic").debug("%s", message)
+
+
+class YtDlpSessionLogger:
+    """Adapter accepted by yt-dlp; technical messages stay out of the terminal."""
+
+    def debug(self, message):
+        component_logger("yt-dlp").debug("%s", message)
+
+    def info(self, message):
+        component_logger("yt-dlp").info("%s", message)
+
+    def warning(self, message):
+        component_logger("yt-dlp").warning("%s", message)
+
+    def error(self, message):
+        component_logger("yt-dlp").error("%s", message)
+
+
+def run_yt_dlp(options, action, *args, **kwargs):
+    """Construct YoutubeDL and execute the requested action."""
+    import yt_dlp
+
+    options = dict(options)
+    options.setdefault("logger", YtDlpSessionLogger())
+    with yt_dlp.YoutubeDL(options) as ydl:
+        return action(ydl, *args, **kwargs)
