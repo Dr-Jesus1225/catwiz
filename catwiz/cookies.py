@@ -2,7 +2,6 @@
 
 import json
 import os
-import shutil
 
 from .system import get_config_file
 from .ui import print_green
@@ -63,7 +62,7 @@ def browser_cookies_menu():
         try:
             with open(temporary, 'w', encoding='utf-8') as stream:
                 json.dump(config, stream, indent=4)
-                stream.write('\\n')
+                stream.write(chr(10))
             os.replace(temporary, path)
         finally:
             if os.path.exists(temporary):
