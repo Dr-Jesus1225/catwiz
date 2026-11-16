@@ -3,7 +3,7 @@
 import os
 import sys
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QUrl\nfrom PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel,
     QLineEdit, QListWidget, QMainWindow, QMessageBox, QPushButton,
@@ -56,7 +56,7 @@ class CatWizWindow(QMainWindow):
         side.addWidget(self._eyebrow("WORKSPACE"))
         self.nav_buttons = []
         self.stack = QStackedWidget()
-        for label, page in (("⌂   Home", self._home_page()), ("⇩   Downloads", self._downloads_page()), ("⚙   Settings", self._settings_page())):
+        for label, page in (("⌂   Home", self._home_page()), ("⇩   Downloads", self._downloads_page()), ("▤   Logs", self._logs_page()), ("⚙   Settings", self._settings_page())):
             button = QPushButton(label)
             button.setObjectName("Nav")
             button.setCheckable(True)
@@ -154,6 +154,86 @@ class CatWizWindow(QMainWindow):
         panel.addStretch(1); panel.addWidget(title, alignment=Qt.AlignHCenter); panel.addWidget(note, alignment=Qt.AlignHCenter); panel.addStretch(1)
         layout.addWidget(self._panel(panel), 1)
         return page
+
+
+    def _logs_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.addLayout(self._heading("Logs", "Review CatWiz activity and technical diagnostics stored locally."))
+        controls = QHBoxLayout()
+        self.log_type = QComboBox()
+        self.log_type.addItems(["Activity", "Diagnostics", "Errors"])
+        self.log_type.currentIndexChanged.connect(self._refresh_logs)
+        self.log_search = QLineEdit()
+        self.log_search.setPlaceholderText("Search log messages…")
+        self.log_search.textChanged.connect(self._refresh_logs)
+        self.log_level = QComboBox()
+        self.log_level.addItems(["All levels", "Info", "Warning", "Error", "Debug"])
+        self.log_level.currentIndexChanged.connect(self._refresh_logs)
+        controls.addWidget(self.log_type)
+        controls.addWidget(self.log_level)
+        controls.addWidget(self.log_search, 1)
+        layout.addLayout(controls)
+
+        self.log_view = QTextEdit()
+        self.log_view.setReadOnly(True)
+        self.log_view.setLineWrapMode(QTextEdit.NoWrap)
+        layout.addWidget(self.log_view, 1)
+
+        actions = QHBoxLayout()
+        refresh = QPushButton("Refresh")
+        refresh.clicked.connect(self._refresh_logs)
+        folder = QPushButton("Open Log Folder")
+        folder.clicked.connect(self._open_log_folder)
+        errors = QPushButton("Export Errors")
+        errors.clicked.connect(lambda: self._export_logs("errors"))
+        full = QPushButton("Export Full Diagnostics")
+        full.setObjectName("Primary")
+        full.clicked.connect(lambda: self._export_logs("full"))
+        actions.addWidget(refresh)
+        actions.addWidget(folder)
+        actions.addStretch(1)
+        actions.addWidget(errors)
+        actions.addWidget(full)
+        layout.addLayout(actions)
+        self._refresh_logs()
+        return page
+
+    def _refresh_logs(self, *_):
+        from catwiz.logging_service import get_log_paths, get_logger
+        get_logger()
+        paths = get_log_paths()
+        key = ("activity", "diagnostics", "errors")[self.log_type.currentIndex()]
+        path = paths[key]
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as stream:
+                lines = stream.readlines()[-1500:]
+        except OSError:
+            lines = []
+        query = self.log_search.text().strip().lower()
+        level = self.log_level.currentText().upper()
+        if level == "ALL LEVELS":
+            level = ""
+        visible = [
+            line.rstrip() for line in lines
+            if (not query or query in line.lower())
+            and (not level or (" " + level) in line)
+        ]
+        self.log_view.setPlainText("\\n".join(visible) if visible else "No matching log entries.")
+        scrollbar = self.log_view.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def _open_log_folder(self):
+        from catwiz.logging_service import get_log_dir
+        QDesktopServices.openUrl(QUrl.fromLocalFile(get_log_dir()))
+
+    def _export_logs(self, kind):
+        try:
+            from catwiz.logging_export import export_diagnostics
+            path = export_diagnostics(kind)
+            QMessageBox.information(self, "Diagnostic export created", f"Saved locally to:\\n{path}")
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "Export failed", "CatWiz could not create the diagnostic export.")
 
     def _settings_page(self):
         page = QWidget()
