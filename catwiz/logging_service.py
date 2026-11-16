@@ -3,10 +3,9 @@
 import logging
 import os
 import platform
-import shutil
 import sys
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 
 from .logging_context import current_context, new_session_id, set_session_id
