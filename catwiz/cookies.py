@@ -23,15 +23,13 @@ def selected_browser():
 
 def apply_browser_cookies(options):
     """Use browser cookies and a locally installed CA bundle when available."""
-    # Never disable TLS verification. Prefer Python's default CA store.
+    # Prefer certifi's maintained Mozilla root bundle without disabling TLS checks.
     try:
-        default_paths = ssl.get_default_verify_paths()
-        if not default_paths.cafile or not os.path.exists(default_paths.cafile):
-            import certifi
-            options.setdefault('nocheckcertificate', False)
-            options.setdefault('ca_certs', certifi.where())
+        import certifi
+        options.setdefault('compat_opts', set()).add('no-certifi')
+        options.setdefault('ca_certs', certifi.where())
     except ImportError:
-        # The standard Python trust store remains enabled.
+        # yt-dlp retains its own secure certificate defaults.
         pass
     except OSError as error:
         write_diagnostic(f"Could not locate certificate bundle: {error}")
