@@ -579,12 +579,12 @@ def has_centered_square_artwork(image_path):
 
 def download_thumbnail_file(item_url, safe_title):
     thumb_opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,
+        'no_warnings': False,
+        'verbose': True,
         'skip_download': True,
         'writethumbnail': True,
         'outtmpl': safe_title.replace('%', '%%'),
-        'logger': QuietLogger(),
     }
 
     with yt_dlp.YoutubeDL(apply_browser_cookies(thumb_opts)) as ydl:
@@ -1141,9 +1141,9 @@ def _process_single_item(
                 }
             ],
             'progress_hooks': [progress_hook],
-            'quiet': True,
-            'no_warnings': True,
-            'logger': QuietLogger(),
+            'quiet': False,
+            'no_warnings': False,
+            'verbose': True,
         }
 
     else:
