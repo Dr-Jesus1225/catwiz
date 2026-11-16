@@ -6,7 +6,7 @@ import yt_dlp
 
 from .ui import CYAN, RED, RESET, YELLOW, ask_proceed, print_green
 from .cookies import apply_browser_cookies
-from .utils import QuietLogger, format_duration
+from .utils import format_duration
 
 def is_valid_yt_url(url):
     pattern = r'^(https?://)?((www|m|music)\.)?(youtube\.com/(watch\?|playlist\?|shorts/|live/|embed/)|youtu\.be/)[^\s]+$'
@@ -14,15 +14,16 @@ def is_valid_yt_url(url):
 
 def fetch_playlist_info(url):
     opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,
+        'no_warnings': False,
+        'verbose': True,
         'extract_flat': True,
-        'logger': QuietLogger(),
     }
     with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
-        except Exception:
+        except Exception as error:
+            print(f"yt-dlp extraction error: {error}", file=sys.stderr)
             return None
     if not info:
         return None
@@ -179,7 +180,8 @@ def fetch_info(url):
     with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_info_opts)) as ydl:
         try:
             return ydl.extract_info(url, download=False)
-        except Exception:
+        except Exception as error:
+            print(f"yt-dlp extraction error: {error}", file=sys.stderr)
             return None
 
 def fetch_playlist_entries(url):
@@ -197,5 +199,6 @@ def fetch_playlist_entries(url):
             if 'entries' in info:
                 return [entry['url'] for entry in info['entries'] if entry]
             return [url]
-        except Exception:
+        except Exception as error:
+            print(f"yt-dlp extraction error: {error}", file=sys.stderr)
             return []
