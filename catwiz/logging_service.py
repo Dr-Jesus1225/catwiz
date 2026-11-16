@@ -66,6 +66,20 @@ class _ArchiveDailyHandler(TimedRotatingFileHandler):
             encoding="utf-8", delay=True, utc=False
         )
         self.namer = self._archive_name
+        self.max_bytes = 5 * 1024 * 1024
+
+    def emit(self, record):
+        try:
+            if os.path.isfile(self.baseFilename) and os.path.getsize(self.baseFilename) >= self.max_bytes:
+                if self.stream:
+                    self.stream.close()
+                    self.stream = None
+                suffix = datetime.now().strftime("%Y-%m-%d-%H%M%S-%f")
+                archive_name = os.path.join(self.archive_dir, os.path.basename(self.baseFilename) + "." + suffix)
+                os.replace(self.baseFilename, archive_name)
+        except OSError:
+            pass
+        super().emit(record)
 
     def _archive_name(self, default_name):
         return os.path.join(self.archive_dir, os.path.basename(default_name))
@@ -85,6 +99,8 @@ def _cleanup_archive(archive_dir):
         for name in os.listdir(archive_dir):
             path = os.path.join(archive_dir, name)
             try:
+                if name == "legacy-logs-migrated.txt":
+                    continue
                 if os.path.isfile(path) and os.path.getmtime(path) < cutoff:
                     os.remove(path)
             except OSError:
