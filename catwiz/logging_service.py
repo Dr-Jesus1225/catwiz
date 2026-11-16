@@ -20,7 +20,7 @@ _LOG_DIR = None
 
 class _ContextFilter(logging.Filter):
     def filter(self, record):
-        record.session_id, record.download_id = current_context()
+        record.session_id, record.download_id = current_context()\n        record.component = getattr(record, "component", "app")
         record.msg = redact_text(record.getMessage())
         record.args = ()
         return True
