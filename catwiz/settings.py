@@ -12,7 +12,9 @@ from .updater import update_menu
 from .system import (
     get_default_download_dir,
     get_download_dir,
-    set_download_dir
+    set_download_dir,
+    get_auto_update_check,
+    set_auto_update_check
 )
 from .shortcuts import change_shortcut
 from .cookies import browser_cookies_menu
@@ -249,6 +251,18 @@ def change_download_location():
             print_green("Existing downloads were left in their original locations.")
 
 
+def toggle_startup_update_check():
+    enabled = get_auto_update_check()
+    state = "ON" if enabled else "OFF"
+    print(f"\\nCheck for updates on startup: {state}")
+    action = "off" if enabled else "on"
+    if ask_yes_no(f"Turn {action}?"):
+        set_auto_update_check(not enabled)
+        print_green(f"Startup update check turned {action}.")
+    else:
+        print_green("No changes made.")
+
+
 def settings_menu():
     max_attempts = 3
 
@@ -260,7 +274,8 @@ def settings_menu():
         print("  3. Clear cache")
         print("  4. Change download location")
         print("  5. Change shortcut")
-        print("  6. YouTube browser cookies")
+        print("  6. Check for updates on startup")
+        print("  7. YouTube browser cookies")
         print("  0. Back")
         print(f"{CYAN}--------------------------------------{RESET}")
 
@@ -269,10 +284,10 @@ def settings_menu():
 
         while attempts < max_attempts:
             choice = input(
-                f"{YELLOW}Select option [1/2/3/4/5/6/0]:{RESET} "
+                f"{YELLOW}Select option [1/2/3/4/5/6/7/0]:{RESET} "
             ).strip()
 
-            if choice in ("0", "1", "2", "3", "4", "5", "6"):
+            if choice in ("0", "1", "2", "3", "4", "5", "6", "7"):
                 break
 
             attempts += 1
@@ -296,4 +311,6 @@ def settings_menu():
         elif choice == "5":
             change_shortcut()
         elif choice == "6":
+            toggle_startup_update_check()
+        elif choice == "7":
             browser_cookies_menu()
