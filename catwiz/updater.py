@@ -239,7 +239,8 @@ def update_menu():
     if 'failed' in statuses:
         print(f"{YELLOW}Some updates failed. Running the install command again usually repairs everything.{RESET}")
     if 'changed' in statuses:
-        print_green("Updates installed. Restart CatWiz to use them.")
-        sys.exit(0)
+        print_green("Updates installed. Restarting CatWiz automatically...")
+        # Special exit code handled by main.py to relaunch with freshly updated code.
+        sys.exit(75)
     if 'failed' not in statuses:
         print_green("Everything is up to date.")
