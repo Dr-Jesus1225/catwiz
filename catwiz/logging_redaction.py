@@ -1,5 +1,6 @@
 """Privacy-first redaction helpers for CatWiz logs and diagnostic exports."""
 
+import os
 import re
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
@@ -36,6 +37,9 @@ def redact_url(value):
 def redact_text(value):
     """Redact common credential patterns and URL query strings."""
     text = str(value)
+    home = os.path.expanduser("~")
+    if home and home not in ("/", "~"):
+        text = re.sub(re.escape(home), "~", text, flags=re.IGNORECASE)
     text = _SENSITIVE_LINE.sub(r"\1[REDACTED]", text)
     text = _BEARER.sub(r"\1 [REDACTED]", text)
     text = _ASSIGNMENT.sub(r"\1[REDACTED]", text)
