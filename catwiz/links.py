@@ -26,8 +26,8 @@ def fetch_playlist_info(url):
         info = run_yt_dlp(apply_browser_cookies(opts), extract)
     except Exception as error:
         write_diagnostic(f"yt-dlp extraction error: {error}")
-            print("Could not read the playlist. See logs.txt for technical details.", file=sys.stderr)
-            return None
+        print("Could not read the playlist. Check the connection or certificate settings.", file=sys.stderr)
+        return None
     if not info:
         return None
     name = info.get('title') or 'Unknown'
@@ -186,9 +186,9 @@ def fetch_info(url):
     try:
         return run_yt_dlp(apply_browser_cookies(ydl_info_opts), extract)
     except Exception as error:
-            write_diagnostic(f"yt-dlp extraction error: {error}")
-            print("Could not read this video. See logs.txt for technical details.", file=sys.stderr)
-            return None
+        write_diagnostic(f"yt-dlp extraction error: {error}")
+        print("Could not read this video. Check the connection or certificate settings.", file=sys.stderr)
+        return None
 
 def fetch_playlist_entries(url):
     ydl_opts = {
@@ -208,6 +208,6 @@ def fetch_playlist_entries(url):
     try:
         return run_yt_dlp(apply_browser_cookies(ydl_opts), extract)
     except Exception as error:
-            write_diagnostic(f"yt-dlp extraction error: {error}")
-            print("Could not read playlist items. Check logs.txt for diagnostics.")
-            return []
+        write_diagnostic(f"yt-dlp extraction error: {error}")
+        print("Could not read playlist items. Check the connection or certificate settings.")
+        return []
