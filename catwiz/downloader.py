@@ -797,7 +797,7 @@ def resolve_requested_video_quality(info, selection, with_audio):
     higher = min((height for height in available if height > requested), default=None)
 
     print(
-        f"\\n{YELLOW}{requested}p is not available as a native resolution.{RESET}"
+        f"\n{YELLOW}{requested}p is not available as a native resolution.{RESET}"
     )
     choices = {}
     next_choice = 1
