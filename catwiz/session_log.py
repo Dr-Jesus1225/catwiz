@@ -155,11 +155,8 @@ def run_yt_dlp(options, action, *args, **kwargs):
     """Construct YoutubeDL and execute the action inside the log-only stream."""
     import yt_dlp
 
-    def execute():
-        with yt_dlp.YoutubeDL(options) as ydl:
-            return action(ydl, *args, **kwargs)
-
-    return execute()
+    with yt_dlp.YoutubeDL(options) as ydl:
+        return action(ydl, *args, **kwargs)
 
 
 def start_session_logging():
