@@ -1150,7 +1150,7 @@ def _process_single_item(
                 }
             ],
             'progress_hooks': [progress_hook],
-            'quiet': False,
+            'quiet': True,
             'no_warnings': False,
             'verbose': True,
         }
@@ -1176,7 +1176,7 @@ def _process_single_item(
 
     try:
         with yt_dlp.YoutubeDL(apply_browser_cookies(dl_opts)) as ydl:
-            ydl.download([item_url])
+            logged_yt_dlp_call(ydl.download, [item_url])
 
     except Exception as e:
         print()
