@@ -7,7 +7,7 @@ from datetime import datetime
 
 from .system import get_download_dir
 
-_ANSI_ESCAPE = re.compile(r"\x1b\\[[0-?]*[ -/]*[@-~]")
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 class _TeeStream:
