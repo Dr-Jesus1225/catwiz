@@ -30,8 +30,11 @@ def apply_browser_cookies(options):
             import certifi
             options.setdefault('nocheckcertificate', False)
             options.setdefault('ca_certs', certifi.where())
-    except (ImportError, OSError) as error:
-        write_diagnostic(f"Could not locate certifi CA bundle: {error}")
+    except ImportError:
+        # The standard Python trust store remains enabled.
+        pass
+    except OSError as error:
+        write_diagnostic(f"Could not locate certificate bundle: {error}")
 
     browser = selected_browser()
     if browser:
