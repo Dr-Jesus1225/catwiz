@@ -1,0 +1,2 @@
+# Optional desktop GUI dependency for macOS, Windows and Linux desktops.
+PySide6>=6.7
