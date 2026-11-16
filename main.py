@@ -43,6 +43,9 @@ def run():
                 restart = True
             else:
                 raise
+        except Exception:
+            component_logger("cli").exception("Unhandled CLI application error")
+            raise
     finally:
         stop_session_logging(log_handle)
         close_logging()
