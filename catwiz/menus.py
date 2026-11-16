@@ -34,7 +34,7 @@ def select_video_quality(info, is_playlist, with_audio=True):
         for height in heights
     ]
 
-    print(f"\\n{CYAN}--------------------------------------{RESET}")
+    print(f"\n{CYAN}--------------------------------------{RESET}")
     print(" Select Video Quality:")
     for idx, (label, _) in enumerate(options, 1):
         print(f"  {idx}. {label}")
@@ -59,7 +59,7 @@ def select_video_quality(info, is_playlist, with_audio=True):
             if resolution == '0':
                 print_green("Operation cancelled.")
                 sys.exit(0)
-            match = re.fullmatch(r"(\\d+)\\s*[xX×]\\s*(\\d+)", resolution)
+            match = re.fullmatch(r"(\d+)\s*[xX×]\s*(\d+)", resolution)
             if match:
                 width = int(match.group(1))
                 height = int(match.group(2))
