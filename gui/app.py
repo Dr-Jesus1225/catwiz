@@ -9,7 +9,8 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel,
     QLineEdit, QMainWindow, QMessageBox, QPushButton, QStackedWidget,
-    QVBoxLayout, QWidget, QCheckBox, QTextEdit, QScrollArea, QInputDialog
+    QVBoxLayout, QWidget, QCheckBox, QTextEdit, QScrollArea, QInputDialog,
+    QProgressBar,
 )
 
 from catwiz.system import (
@@ -19,9 +20,10 @@ from catwiz.system import (
 
 STYLESHEET = """
 QWidget { background: #101319; color: #e8ebf2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+QLabel { background: transparent; }
 QFrame#Sidebar { background: #171c24; border-right: 1px solid #29313d; }
 QLabel#Brand { font-size: 23px; font-weight: 800; color: #ffffff; padding: 8px 4px 22px; }
-QLabel#Eyebrow { color: #8c9aaf; font-size: 11px; font-weight: 700; }
+QLabel#Eyebrow { background: transparent; color: #8c9aaf; font-size: 11px; font-weight: 700; }
 QLabel#Heading { font-size: 26px; font-weight: 750; color: #ffffff; }
 QLabel#Subheading, QLabel#Muted { color: #9aa6b8; font-size: 13px; }
 QFrame#Panel { background: #191f29; border: 1px solid #2a3442; border-radius: 13px; }
@@ -31,6 +33,8 @@ QPushButton#Primary { background: #e34b66; color: white; border: 0; font-weight:
 QPushButton#Nav { background: transparent; border: 0; color: #aeb9c9; padding: 11px 13px; }
 QPushButton#Nav:checked { background: #293342; color: #ffffff; font-weight: 700; }
 QLineEdit, QComboBox { background: #10151d; border: 1px solid #354153; border-radius: 8px; padding: 11px; }
+QProgressBar { background: #10151d; border: 1px solid #354153; border-radius: 6px; color: #e8ebf2; min-height: 12px; text-align: center; }
+QProgressBar::chunk { background: #e34b66; border-radius: 5px; }
 QCheckBox { spacing: 9px; }
 QScrollArea { border: 0; background: transparent; }
 """
@@ -144,6 +148,13 @@ class CatWizWindow(QMainWindow):
         self.status_label.setObjectName("Muted")
         self.status_label.setWordWrap(True)
         outer.addWidget(self.status_label)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFormat("%p% · playlist items completed")
+        self.progress_bar.hide()
+        outer.addWidget(self.progress_bar)
         outer.addStretch(1)
         self.mode_combo.currentIndexChanged.connect(self._reset_options)
         return page
@@ -157,6 +168,7 @@ class CatWizWindow(QMainWindow):
         self.item_checks = []
         self.is_playlist = False
         self.status_label.clear()
+        self.progress_bar.hide()
         self.url_panel.show()
     def _clear_layout(self, layout):
         while layout.count():
@@ -296,10 +308,6 @@ class CatWizWindow(QMainWindow):
         try:
             if mode == "1":
                 selected_quality = self.quality_combo.currentText().split()[0]
-                if selected_quality == "320":
-                    selected_quality = "320"
-                else:
-                    selected_quality = selected_quality
             elif mode == "2":
                 label = self.video_quality.currentText()
                 if label == "Custom resolution…":
@@ -317,7 +325,6 @@ class CatWizWindow(QMainWindow):
                     selected_quality["type"] = "custom"
                 elif "x" in label:
                     width, height = map(int, label.split("x"))
-                    # Match the CLI's thumbnail list by dimensions.
                     thumb = next((t for t in self.media_info.get("thumbnails", []) if t.get("width") == width and t.get("height") == height), None)
                     selected_quality = thumb.get("url") if thumb else "best"
                 else:
@@ -339,29 +346,40 @@ class CatWizWindow(QMainWindow):
         return {"type": "custom", "width": width, "height": height}
 
     def _run_downloads(self, mode, playlist, items, quality, with_audio, quality_label):
-        """Run the existing CatWiz processing functions with the GUI's selections."""
+        """Run CatWiz processing and report completed playlist items in the GUI."""
         self.download_button.setEnabled(False)
-        self.status_label.setText("Download started. CatWiz is processing your selection…")
+        self.progress_bar.setValue(0)
+        self.progress_bar.setFormat("Preparing download…")
+        self.progress_bar.show()
+        self.status_label.setText("Download started. Progress advances as each item finishes.")
         QApplication.processEvents()
         try:
             from catwiz.downloader import process_single_item, process_thumbnail_only
             save_path = get_category_dir({"1": "audio", "2": "video", "3": "thumbnail"}[mode])
+            special_cover = mode == "3" and playlist and getattr(self, "image_playlist_combo", None) and self.image_playlist_combo.currentIndex() == 1
+            work_items = [self.current_url] if special_cover else items
             results = []
-            total = len(items)
-            if mode == "3" and playlist and getattr(self, "image_playlist_combo", None) and self.image_playlist_combo.currentIndex() == 1:
-                process_thumbnail_only(self.current_url, False, 1, 1, save_path, quality, pre_info=self.media_info)
-                results = [True]
-            else:
-                for index, item_url in enumerate(items, 1):
-                    if mode == "3":
-                        result = process_thumbnail_only(item_url, playlist, index, total, save_path, quality, pre_info=self.media_info if not playlist else None)
-                    else:
-                        result = process_single_item(item_url, mode, playlist, index, total, save_path, quality, pre_info=self.media_info if not playlist else None, with_audio=with_audio, quality_label=quality_label)
-                    results.append(bool(result))
+            total = len(work_items)
+            self.progress_bar.setFormat(f"0 of {total} items completed")
+            for index, item_url in enumerate(work_items, 1):
+                self.status_label.setText(f"Processing item {index} of {total}…")
+                self.progress_bar.setFormat(f"Processing {index} of {total}…")
+                QApplication.processEvents()
+                if special_cover:
+                    result = process_thumbnail_only(item_url, False, 1, 1, save_path, quality, pre_info=self.media_info)
+                elif mode == "3":
+                    result = process_thumbnail_only(item_url, playlist, index, total, save_path, quality, pre_info=self.media_info if not playlist else None)
+                else:
+                    result = process_single_item(item_url, mode, playlist, index, total, save_path, quality, pre_info=self.media_info if not playlist else None, with_audio=with_audio, quality_label=quality_label)
+                results.append(bool(result))
+                self.progress_bar.setValue(round(index * 100 / total))
+                self.progress_bar.setFormat(f"{index} of {total} items completed")
+                QApplication.processEvents()
             saved = sum(results)
-            QMessageBox.information(self, "CatWiz", f"Finished: {saved} of {total if not (mode == '3' and playlist and getattr(self, 'image_playlist_combo', None) and self.image_playlist_combo.currentIndex() == 1) else 1} saved.")
+            QMessageBox.information(self, "CatWiz", f"Finished: {saved} of {total} saved.")
             self.status_label.setText("Download finished.")
-        except Exception as error:
+            self.progress_bar.setFormat(f"Complete · {saved} of {total} saved")
+        except Exception:
             QMessageBox.warning(self, "Download failed", "CatWiz could not complete the selected download. Check Logs for details.")
             try:
                 from catwiz.logging_service import component_logger
@@ -369,6 +387,7 @@ class CatWizWindow(QMainWindow):
             except Exception:
                 pass
             self.status_label.setText("Download failed. See Logs for details.")
+            self.progress_bar.setFormat("Download failed")
         finally:
             self.download_button.setEnabled(True)
 
