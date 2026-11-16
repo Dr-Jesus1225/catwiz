@@ -5,7 +5,7 @@ import os
 
 from .system import get_config_file
 from .ui import print_green
-from .session_log import write_diagnostic
+from .session_log import YtDlpSessionLogger, write_diagnostic
 
 BROWSERS = ('chrome', 'firefox', 'edge', 'brave', 'chromium', 'opera', 'vivaldi', 'safari')
 
@@ -32,6 +32,7 @@ def apply_browser_cookies(options):
     except OSError as error:
         write_diagnostic(f"Could not locate certificate bundle: {error}")
 
+    options.setdefault('logger', YtDlpSessionLogger())
     browser = selected_browser()
     if browser:
         options['cookiesfrombrowser'] = (browser,)
