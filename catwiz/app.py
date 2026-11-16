@@ -53,36 +53,8 @@ def main():
 
         break
 
-    print(f"\n{CYAN}--------------------------------------{RESET}")
-    print("  1. Single Item")
-    print("  2. Full Playlist")
-    print("  0. Cancel")
-    print(f"{CYAN}--------------------------------------{RESET}")
-
-    attempts = 0
-    type_choice = None
-
-    while attempts < max_attempts:
-        type_choice = input(
-            f"{YELLOW}Select type [1/2/0]:{RESET} "
-        ).strip()
-
-        if type_choice in ('0', '1', '2'):
-            break
-
-        attempts += 1
-
-        if attempts < max_attempts:
-            print_green("Invalid option selected.")
-        else:
-            print_green("Too many invalid attempts. Exiting.")
-            sys.exit(1)
-
-    if type_choice == '0':
-        print_green("Operation cancelled.")
-        sys.exit(0)
-
-    is_playlist = (type_choice == '2')
+    url, info, playlist_items = get_validated_url(mode)
+    is_playlist = playlist_items is not None
     playlist_thumbnail_choice = None
 
     if mode == '3' and is_playlist:
@@ -91,37 +63,20 @@ def main():
         print("  2. Every item's thumbnail")
         print("  0. Cancel")
         print(f"{CYAN}--------------------------------------{RESET}")
-
-        attempts = 0
-
-        while attempts < max_attempts:
-            playlist_thumbnail_choice = input(
-                f"{YELLOW}Select option [1/2/0]:{RESET} "
-            ).strip()
-
+        while True:
+            playlist_thumbnail_choice = input(f"{YELLOW}Select option [1/2/0]:{RESET} ").strip()
             if playlist_thumbnail_choice in ('0', '1', '2'):
                 break
-
-            attempts += 1
-
-            if attempts < max_attempts:
-                print_green("Invalid option selected.")
-            else:
-                print_green("Too many invalid attempts. Exiting.")
-                sys.exit(1)
-
+            print_green("Invalid option selected.")
         if playlist_thumbnail_choice == '0':
             print_green("Operation cancelled.")
             sys.exit(0)
-
-    url, info, playlist_items = get_validated_url(is_playlist, mode)
 
     if is_playlist:
         playlist_items = choose_playlist_items(playlist_items, info)
         if not playlist_items:
             print_green("No playlist items selected. Operation cancelled.")
             return
-
     with_audio = True
     if mode == '2':
         with_audio = ask_yn("Download audio for the video?")
