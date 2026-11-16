@@ -7,6 +7,7 @@ import yt_dlp
 from .ui import CYAN, RED, RESET, YELLOW, ask_proceed, print_green
 from .cookies import apply_browser_cookies
 from .utils import format_duration
+from .session_log import logged_yt_dlp_call, write_diagnostic
 
 def is_valid_yt_url(url):
     pattern = r'^(https?://)?((www|m|music)\.)?(youtube\.com/(watch\?|playlist\?|shorts/|live/|embed/)|youtu\.be/)[^\s]+$'
@@ -14,16 +15,17 @@ def is_valid_yt_url(url):
 
 def fetch_playlist_info(url):
     opts = {
-        'quiet': False,
+        'quiet': True,
         'no_warnings': False,
         'verbose': True,
         'extract_flat': True,
     }
     with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
         try:
-            info = ydl.extract_info(url, download=False)
+            info = logged_yt_dlp_call(ydl.extract_info, url, download=False)
         except Exception as error:
-            print(f"yt-dlp extraction error: {error}", file=sys.stderr)
+            write_diagnostic(f"yt-dlp extraction error: {error}")
+            print("Could not read the playlist. See logs.txt for technical details.", file=sys.stderr)
             return None
     if not info:
         return None
@@ -179,9 +181,10 @@ def fetch_info(url):
     }
     with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_info_opts)) as ydl:
         try:
-            return ydl.extract_info(url, download=False)
+            return logged_yt_dlp_call(ydl.extract_info, url, download=False)
         except Exception as error:
-            print(f"yt-dlp extraction error: {error}", file=sys.stderr)
+            write_diagnostic(f"yt-dlp extraction error: {error}")
+            print("Could not read this video. See logs.txt for technical details.", file=sys.stderr)
             return None
 
 def fetch_playlist_entries(url):
@@ -193,12 +196,13 @@ def fetch_playlist_entries(url):
     }
     with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_opts)) as ydl:
         try:
-            info = ydl.extract_info(url, download=False)
+            info = logged_yt_dlp_call(ydl.extract_info, url, download=False)
             if not info:
                 return []
             if 'entries' in info:
                 return [entry['url'] for entry in info['entries'] if entry]
             return [url]
         except Exception as error:
-            print(f"yt-dlp extraction error: {error}", file=sys.stderr)
+            write_diagnostic(f"yt-dlp extraction error: {error}")
+            print("Could not read playlist items. Check logs.txt for diagnostics.")
             return []
