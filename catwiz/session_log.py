@@ -117,12 +117,14 @@ def stop_session_logging(log_file):
     if _ORIGINAL_INPUT is not None:
         builtins.input = _ORIGINAL_INPUT
         _ORIGINAL_INPUT = None
+    global _ACTIVE_LOG
     if log_file:
         try:
             sys.stdout.flush()
             sys.stderr.flush()
         finally:
             log_file.close()
+    _ACTIVE_LOG = None
 
 
 def write_diagnostic(message):
