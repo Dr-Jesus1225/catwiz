@@ -13,6 +13,7 @@ from .utils import PROGRAM_DIR, short_reason
 from .logging_service import component_logger, log_activity
 
 def show_status(status, msg):
+    log_activity('Update result: ' + str(status), component='updater', level=40 if status == 'failed' else 20)
     if status in ('changed', 'same'):
         print_green(msg)
     elif status == 'skipped':
