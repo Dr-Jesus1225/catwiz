@@ -4,6 +4,7 @@ import yt_dlp
 
 from .cookies import apply_browser_cookies
 from .utils import log_error
+from .session_log import logged_yt_dlp_call, write_diagnostic
 
 FORMAT_SORT = ['res', 'vcodec:h264', 'acodec:aac']
 
@@ -19,7 +20,7 @@ def _has(codec):
 def resolve_quality(url, fmt):
     """Ask yt-dlp which format(s) this selection really picks. Returns a dict or None."""
     opts = {
-        'quiet': False,
+        'quiet': True,
         'no_warnings': False,
         'verbose': True,
         'skip_download': True,
@@ -29,8 +30,9 @@ def resolve_quality(url, fmt):
     }
     try:
         with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
-            data = ydl.extract_info(url, download=False)
+            data = logged_yt_dlp_call(ydl.extract_info, url, download=False)
     except Exception as e:
+        write_diagnostic(f"yt-dlp quality lookup error: {e}")
         log_error(url, f"could not resolve quality: {e}")
         return None
     if not data:
