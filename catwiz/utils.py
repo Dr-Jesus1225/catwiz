@@ -8,6 +8,7 @@ import subprocess
 
 from .ui import RED, RESET
 from .session_log import write_diagnostic
+from .logging_service import component_logger
 
 PROGRAM_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the folder that holds main.py
 ERROR_LOG = os.path.join(PROGRAM_DIR, 'errors.log')
@@ -25,12 +26,8 @@ def clean_filename(title):
 ANSI_RE = re.compile(r'\x1b\[[0-9;]*m')
 
 def log_error(context, detail):
-    """Append a line to errors.log so problems can be reported later."""
-    try:
-        with open(ERROR_LOG, 'a', encoding='utf-8') as f:
-            f.write(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {context}: {detail}\n")
-    except OSError:
-        pass
+    """Record a sanitized error in CatWiz's central error log."""
+    component_logger("downloader").error("%s: %s", context, detail)
 
 def short_reason(err, limit=140):
     text = ANSI_RE.sub('', str(err)).strip()
