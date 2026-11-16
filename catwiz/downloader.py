@@ -15,7 +15,6 @@ from .quality import FORMAT_SORT, announce_quality, make_video_format, resolve_q
 from .sidecar import run_sidecar_step
 from .ui import CYAN, GREEN, RESET, YELLOW, print_green
 from .utils import (
-    QuietLogger,
     clean_filename,
     cleanup_partials,
     ensure_dir,
@@ -25,6 +24,7 @@ from .utils import (
     safe_remove,
     short_reason,
 )
+from .session_log import write_diagnostic
 
 CURRENT_ITEM = {'safe_title': None}
 
@@ -254,6 +254,7 @@ def run_ffmpeg_with_progress(command, duration=None):
                 continue
 
         return_code = process.wait()
+        write_diagnostic(f"FFmpeg progress process exited with code {return_code}")
 
         print()
 
@@ -1122,9 +1123,9 @@ def _process_single_item(
                 },
             ],
             'progress_hooks': [progress_hook],
-            'quiet': True,
-            'no_warnings': True,
-            'logger': QuietLogger(),
+            'quiet': False,
+            'no_warnings': False,
+            'verbose': True,
         }
 
     elif video_only:
