@@ -189,7 +189,7 @@ def fetch_info(url):
 
 def fetch_playlist_entries(url):
     ydl_opts = {
-        'quiet': False,
+        'quiet': True,
         'no_warnings': False,
         'verbose': True,
         'extract_flat': True,
