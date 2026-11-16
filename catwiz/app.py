@@ -152,10 +152,7 @@ def main():
             announce_quality(None, quality_label)
             want_sidecar = ask_yn("Download subtitles when available?")
         else:
-            if not (
-                isinstance(selected_quality, dict)
-                and selected_quality.get('type') == 'requested'
-            ):
+            if not isinstance(selected_quality, dict):
                 resolved = resolve_quality(url, selected_quality)
             announce_quality(resolved, quality_label)
             sidecar_text = run_sidecar_step(
