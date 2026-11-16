@@ -10,7 +10,7 @@ import yt_dlp
 
 from .captions import write_sidecar
 from .links import fetch_info
-from .quality import FORMAT_SORT, announce_quality, resolve_quality
+from .quality import FORMAT_SORT, announce_quality, make_video_format, resolve_quality
 from .sidecar import run_sidecar_step
 from .ui import CYAN, GREEN, RESET, YELLOW, print_green
 from .utils import (
@@ -772,6 +772,97 @@ def process_thumbnail_only(
     return True
 
 
+def resolve_requested_video_quality(info, selection, with_audio):
+    """Resolve a requested standard height against this video's native formats."""
+    if not (
+        isinstance(selection, dict)
+        and selection.get('type') == 'requested'
+    ):
+        return selection
+
+    requested = selection['height']
+    available = set()
+    for fmt in (info or {}).get('formats', []):
+        if fmt.get('vcodec') == 'none':
+            continue
+        height = fmt.get('height')
+        if isinstance(height, int) and height > 0:
+            available.add(height)
+
+    if requested in available:
+        print_green(f"Native {requested}p is available. Downloading it.")
+        return make_video_format(requested, with_audio)
+
+    lower = max((height for height in available if height < requested), default=None)
+    higher = min((height for height in available if height > requested), default=None)
+
+    print(
+        f"\n{YELLOW}{requested}p is not available as a native resolution.{RESET}"
+    )
+    choices = {}
+    next_choice = 1
+
+    if lower is not None:
+        print(f"  {next_choice}. Download closest lower resolution ({lower}p)")
+        choices[str(next_choice)] = ('native', lower)
+        next_choice += 1
+
+    if higher is not None:
+        print(f"  {next_choice}. Download closest higher resolution ({higher}p)")
+        choices[str(next_choice)] = ('native', higher)
+        next_choice += 1
+        print(
+            f"  {next_choice}. Download {higher}p and resize to {requested}p"
+        )
+        choices[str(next_choice)] = ('resize', higher)
+        next_choice += 1
+
+    if not choices:
+        print_green("No usable native video resolution was found.")
+        return None
+
+    print("  0. Cancel")
+    while True:
+        choice = input(
+            f"{YELLOW}Choose an option [0-{next_choice - 1}]:{RESET} "
+        ).strip()
+        if choice == '0':
+            print_green("Operation cancelled.")
+            return None
+        if choice not in choices:
+            print_green("Invalid selection.")
+            continue
+
+        action, height = choices[choice]
+        if action == 'native':
+            print_green(f"Using native {height}p.")
+            return make_video_format(height, with_audio)
+
+        # Use the existing custom-resolution processing path so its current
+        # stretch/crop choice and FFmpeg filters remain unchanged.
+        widths = {
+            144: 256,
+            240: 426,
+            360: 640,
+            480: 854,
+            720: 1280,
+            1080: 1920,
+        }
+        target_width = widths.get(requested)
+        if target_width is None:
+            target_width = max(2, int(round(requested * 16 / 9 / 2)) * 2)
+
+        print_green(
+            f"Using {height}p as the source and resizing to "
+            f"{target_width}x{requested}."
+        )
+        return {
+            "type": "custom",
+            "width": target_width,
+            "height": requested,
+        }
+
+
 def process_single_item(
     item_url, mode, is_playlist, index, total, save_path, selected_format,
     pre_info=None, with_audio=True, want_sidecar=False, sidecar_text=None,
@@ -816,6 +907,13 @@ def _process_single_item(
     title = info.get('title', 'media')
     safe_title = clean_filename(title)
     CURRENT_ITEM['safe_title'] = safe_title
+
+    if mode == '2':
+        selected_format = resolve_requested_video_quality(
+            info, selected_format, with_audio
+        )
+        if selected_format is None:
+            return False
 
     png_path = f"{safe_title}.png"
     ext = 'mp3' if mode == '1' else 'mp4'
