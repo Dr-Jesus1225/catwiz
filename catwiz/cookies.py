@@ -26,7 +26,7 @@ def apply_browser_cookies(options):
     # default when installed; do not inject unsupported CA parameters here.
     try:
         import certifi
-        write_diagnostic(f"Using certifi CA bundle: {certifi.where()}")
+        write_diagnostic("certifi CA bundle is available; certificate verification remains enabled.")
     except ImportError:
         write_diagnostic("certifi is not installed; yt-dlp will use its default CA bundle.")
     except OSError as error:
@@ -35,6 +35,7 @@ def apply_browser_cookies(options):
     options.setdefault('logger', YtDlpSessionLogger())
     browser = selected_browser()
     if browser:
+        write_diagnostic(f"Browser cookie integration enabled for {browser}; cookie values are never logged.")
         options['cookiesfrombrowser'] = (browser,)
     return options
 
