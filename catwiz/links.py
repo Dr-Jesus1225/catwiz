@@ -2,7 +2,6 @@
 
 import re
 import sys
-import yt_dlp
 
 from .ui import CYAN, RED, RESET, YELLOW, ask_proceed, print_green
 from .cookies import apply_browser_cookies
