@@ -20,11 +20,14 @@ def redact_url(value):
         parts = urlsplit(value)
         if not parts.scheme or not parts.netloc:
             return value
+        host = parts.hostname or ""
+        if parts.port:
+            host = f"{host}:{parts.port}"
         safe_query = urlencode([
             (key, "[REDACTED]" if _SECRET_KEY.search(key) else "[REDACTED]")
             for key, _ in parse_qsl(parts.query, keep_blank_values=True)
         ]) if parts.query else ""
-        return urlunsplit((parts.scheme, parts.netloc, parts.path, safe_query, ""))
+        return urlunsplit((parts.scheme, host, parts.path, safe_query, ""))
     except (TypeError, ValueError):
         return "[REDACTED_URL]"
 
