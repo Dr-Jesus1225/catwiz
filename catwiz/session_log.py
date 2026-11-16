@@ -1,7 +1,6 @@
 """Timestamped per-session logging for CatWiz."""
 
 import builtins
-import contextlib
 import os
 import re
 import sys
@@ -134,33 +133,22 @@ def write_diagnostic(message):
         _ACTIVE_LOG.flush()
 
 
-def logged_yt_dlp_call(callback, *args, **kwargs):
-    """Run a full yt-dlp setup/operation with output routed only to logs."""
-    if not _ACTIVE_LOG:
-        return callback(*args, **kwargs)
+class YtDlpSessionLogger:
+    """Route yt-dlp's internal logger messages to logs.txt only."""
 
-    class LogSink:
-        encoding = "utf-8"
-        errors = "replace"
+    def debug(self, message):
+        write_diagnostic(f"[yt-dlp debug] {message}")
 
-        def write(self, value):
-            if value:
-                _ACTIVE_LOG.write(_ANSI_ESCAPE.sub("", str(value)))
-                _ACTIVE_LOG.flush()
-            return len(value)
+    def info(self, message):
+        write_diagnostic(f"[yt-dlp info] {message}")
 
-        def flush(self):
-            _ACTIVE_LOG.flush()
+    def warning(self, message):
+        write_diagnostic(f"[yt-dlp warning] {message}")
 
-        def isatty(self):
-            return False
+    def error(self, message):
+        write_diagnostic(f"[yt-dlp error] {message}")
 
-        def writable(self):
-            return True
 
-    sink = LogSink()
-    with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
-        return callback(*args, **kwargs)
 
 
 def run_yt_dlp(options, action, *args, **kwargs):
@@ -171,7 +159,7 @@ def run_yt_dlp(options, action, *args, **kwargs):
         with yt_dlp.YoutubeDL(options) as ydl:
             return action(ydl, *args, **kwargs)
 
-    return logged_yt_dlp_call(execute)
+    return execute()
 
 
 def start_session_logging():
