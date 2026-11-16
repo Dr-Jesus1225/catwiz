@@ -136,7 +136,7 @@ def write_diagnostic(message):
 
 
 def logged_yt_dlp_call(callback, *args, **kwargs):
-    """Run third-party downloader code with stdout/stderr isolated to logs."""
+    """Run a full yt-dlp setup/operation with all output sent only to logs."""
     if not _ACTIVE_LOG:
         return callback(*args, **kwargs)
 
@@ -146,8 +146,7 @@ def logged_yt_dlp_call(callback, *args, **kwargs):
 
         def write(self, value):
             if value:
-                clean = _ANSI_ESCAPE.sub("", str(value))
-                _ACTIVE_LOG.write(clean)
+                _ACTIVE_LOG.write(_ANSI_ESCAPE.sub("", str(value)))
                 _ACTIVE_LOG.flush()
             return len(value)
 
@@ -166,6 +165,17 @@ def logged_yt_dlp_call(callback, *args, **kwargs):
         return callback(*args, **kwargs)
     finally:
         sys.stdout, sys.stderr = stdout, stderr
+
+
+def run_yt_dlp(options, action, *args, **kwargs):
+    """Construct YoutubeDL and execute the action inside the log-only stream."""
+    import yt_dlp
+
+    def execute():
+        with yt_dlp.YoutubeDL(options) as ydl:
+            return action(ydl, *args, **kwargs)
+
+    return logged_yt_dlp_call(execute)
 
 
 def start_session_logging():
