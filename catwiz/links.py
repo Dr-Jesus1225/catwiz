@@ -175,7 +175,7 @@ def get_validated_url(is_playlist, mode):
 
 def fetch_info(url):
     ydl_info_opts = {
-        'quiet': False,
+        'quiet': True,
         'no_warnings': False,
         'verbose': True,
     }
