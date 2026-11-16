@@ -108,60 +108,56 @@ class CatWizWindow(QMainWindow):
         page = QWidget()
         outer = QVBoxLayout(page)
         outer.setSpacing(18)
-        outer.addLayout(self._heading("Download media", "Choose the media type and CatWiz will guide you through the matching options."))
+        outer.addLayout(self._heading("Download media", "Choose a media type, then CatWiz will guide you through the next steps."))
 
-        form = QVBoxLayout()
-        form.setContentsMargins(22, 22, 22, 22)
-        form.setSpacing(12)
-        self.url_input = QLineEdit()
-        self.url_input.setPlaceholderText("Paste a YouTube video or playlist URL")
-        self._field(form, "YOUTUBE URL", self.url_input)
-
+        media_form = QVBoxLayout()
+        media_form.setContentsMargins(22, 22, 22, 22)
+        media_form.setSpacing(12)
         self.mode_combo = QComboBox()
         self.mode_combo.addItems(["Audio", "Video", "Image"])
-        self._field(form, "WHAT DO YOU WANT TO DOWNLOAD?", self.mode_combo)
+        self._field(media_form, "WHAT DO YOU WANT TO DOWNLOAD?", self.mode_combo)
+        self.media_panel = self._panel(media_form)
+        outer.addWidget(self.media_panel)
 
-        self.scope_combo = QComboBox()
-        self.scope_combo.addItems(["Single item", "Playlist"])
-        self._field(form, "DOWNLOAD SCOPE", self.scope_combo)
-
+        self.url_input = QLineEdit()
+        self.url_input.setPlaceholderText("Paste a YouTube video or playlist URL")
+        url_form = QVBoxLayout()
+        url_form.setContentsMargins(22, 22, 22, 22)
+        url_form.setSpacing(12)
+        self._field(url_form, "YOUTUBE LINK", self.url_input)
         self.inspect_button = QPushButton("Continue  →")
         self.inspect_button.setObjectName("Primary")
-        form.addWidget(self.inspect_button)
         self.inspect_button.clicked.connect(self._inspect_url)
+        url_form.addWidget(self.inspect_button)
+        self.url_panel = self._panel(url_form)
+        self.url_panel.hide()
+        outer.addWidget(self.url_panel)
 
-        self.options_panel = QWidget()
-        self.options_layout = QVBoxLayout(self.options_panel)
-        self.options_layout.setContentsMargins(0, 8, 0, 0)
+        self.options_panel = self._panel(QVBoxLayout())
+        self.options_layout = self.options_panel.layout()
+        self.options_layout.setContentsMargins(22, 22, 22, 22)
         self.options_layout.setSpacing(12)
         self.options_panel.hide()
-        form.addWidget(self.options_panel)
+        outer.addWidget(self.options_panel)
 
         self.status_label = QLabel("")
         self.status_label.setObjectName("Muted")
         self.status_label.setWordWrap(True)
-        form.addWidget(self.status_label)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        inner = QWidget()
-        inner_layout = QVBoxLayout(inner)
-        inner_layout.addWidget(self._panel(form))
-        inner_layout.addStretch(1)
-        scroll.setWidget(inner)
-        outer.addWidget(scroll, 1)
+        outer.addWidget(self.status_label)
+        outer.addStretch(1)
         self.mode_combo.currentIndexChanged.connect(self._reset_options)
-        self.scope_combo.currentIndexChanged.connect(self._reset_options)
         return page
-
     def _reset_options(self, *_):
+        self.url_panel.hide()
         self.options_panel.hide()
+        self.url_input.clear()
         self._clear_layout(self.options_layout)
         self.media_info = None
         self.playlist_items = []
         self.item_checks = []
+        self.is_playlist = False
         self.status_label.clear()
-
+        self.url_panel.show()
     def _clear_layout(self, layout):
         while layout.count():
             item = layout.takeAt(0)
@@ -181,35 +177,31 @@ class CatWizWindow(QMainWindow):
         self.status_label.setText("Checking link…")
         QApplication.processEvents()
         try:
-            from catwiz.links import fetch_info, fetch_playlist_info, is_valid_yt_url
+            from catwiz.links import fetch_playlist_info, is_valid_yt_url
             if not is_valid_yt_url(url):
                 raise ValueError("That does not look like a supported YouTube URL.")
             if not url.startswith("http"):
                 url = "https://" + url
-            if self.scope_combo.currentIndex() == 1:
-                result = fetch_playlist_info(url)
-                if not result or not result[2]:
-                    raise ValueError("CatWiz could not find any items in that playlist.")
-                _, _, self.playlist_items, self.media_info = result
-            else:
-                self.media_info = fetch_info(url)
-                if not self.media_info:
-                    raise ValueError("This video is unavailable or could not be inspected.")
-                self.playlist_items = []
+            result = fetch_playlist_info(url)
+            if not result or not result[2]:
+                raise ValueError("This video or playlist is unavailable or could not be inspected.")
+            _, _, items, self.media_info = result
+            self.is_playlist = self.media_info.get("_type") == "playlist" or "entries" in self.media_info
+            self.playlist_items = items if self.is_playlist else []
             self.current_url = url
             self._build_quality_options()
-            self.status_label.setText("Link checked. Choose your options below.")
+            detected = f"Playlist detected · {len(items)} items" if self.is_playlist else "Single video detected"
+            self.status_label.setText(detected + ". Choose what to download below.")
             self.options_panel.show()
         except Exception as error:
             QMessageBox.warning(self, "Could not inspect link", str(error))
             self.status_label.setText("Check the URL and try again.")
         finally:
             self.inspect_button.setEnabled(True)
-
     def _build_quality_options(self):
         self._clear_layout(self.options_layout)
         mode = self.mode_combo.currentIndex()
-        playlist = self.scope_combo.currentIndex() == 1
+        playlist = self.is_playlist
 
         if playlist:
             self.options_layout.addWidget(self._eyebrow(f"PLAYLIST ITEMS · {len(self.playlist_items)} FOUND"))
