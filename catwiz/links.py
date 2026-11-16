@@ -186,10 +186,10 @@ def fetch_info(url):
 
 def fetch_playlist_entries(url):
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,
+        'no_warnings': False,
+        'verbose': True,
         'extract_flat': True,
-        'logger': QuietLogger(),
     }
     with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_opts)) as ydl:
         try:
