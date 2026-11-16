@@ -9,7 +9,7 @@ _SECRET_KEY = re.compile(
     r"api[_-]?key|secret|session|credential|auth)", re.IGNORECASE
 )
 _ASSIGNMENT = re.compile(
-    r"""(?i)(\b(?:cookie|set-cookie|authorization|proxy-authorization|password|passwd|token|api[_-]?key|secret|session(?:id)?|credential)\b\s*[:=]\s*)([^\s,;]+(?:\s+[^,;]+)?)"""
+    r"""(?i)(\b[A-Za-z0-9_.-]*(?:cookies?|set-cookie|authorization|proxy-authorization|password|passwd|token|api[_-]?key|secret|session(?:id)?|credential|auth)[A-Za-z0-9_.-]*\b\s*[:=]\s*)([^\s,;]+(?:\s+[^,;]+)?)"""
 )
 _BEARER = re.compile(r"(?i)\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+")
 _SENSITIVE_LINE = re.compile(r"(?im)(\b(?:cookie|set-cookie|authorization|proxy-authorization)\b\s*[:=]\s*)[^\r\n]+")
