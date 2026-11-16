@@ -4,7 +4,7 @@ import re
 import sys
 import yt_dlp
 
-from .ui import RED, RESET, YELLOW, ask_proceed, print_green
+from .ui import CYAN, RED, RESET, YELLOW, ask_proceed, print_green
 from .utils import QuietLogger, format_duration
 
 def is_valid_yt_url(url):
@@ -32,6 +32,92 @@ def fetch_playlist_info(url):
     else:
         items = [url]
     return name, creator, items, info
+
+
+def choose_playlist_items(items, playlist_info):
+    """Let users download all, selected, or all except selected playlist items."""
+    if not items:
+        return []
+
+    entries = (playlist_info or {}).get('entries') or []
+
+    print(f"\n{CYAN}--------------------------------------{RESET}")
+    print(" Playlist Download Options:")
+    print("  1. Download the whole playlist")
+    print("  2. Download selected items")
+    print("  3. Skip selected items")
+    print("  0. Cancel")
+    print(f"{CYAN}--------------------------------------{RESET}")
+
+    while True:
+        choice = input(
+            f"{YELLOW}Select option [1/2/3/0]:{RESET} "
+        ).strip()
+
+        if choice == '0':
+            print_green("Operation cancelled.")
+            return []
+        if choice == '1':
+            return items
+        if choice in ('2', '3'):
+            break
+        print_green("Invalid selection. Choose 1, 2, 3 or 0.")
+
+    print(f"\nPlaylist items ({len(items)}):")
+    for index, item_url in enumerate(items, 1):
+        entry = entries[index - 1] if index <= len(entries) else {}
+        title = (entry or {}).get('title') or (entry or {}).get('id') or 'Untitled'
+        title = ' '.join(str(title).split())
+        print(f"  {index:>3}. {title}")
+
+    print("\nEnter item numbers separated by commas; ranges are supported.")
+    print("Example: 1, 3, 5-8")
+    selected = set()
+
+    while True:
+        raw = input(
+            f"{YELLOW}Item numbers (or 0 to cancel):{RESET} "
+        ).strip()
+        if raw == '0':
+            print_green("Operation cancelled.")
+            return []
+
+        try:
+            parsed = set()
+            for part in raw.split(','):
+                part = part.strip()
+                if not part:
+                    raise ValueError
+                if re.fullmatch(r'\d+', part):
+                    start = end = int(part)
+                else:
+                    match = re.fullmatch(r'(\d+)\s*-\s*(\d+)', part)
+                    if not match:
+                        raise ValueError
+                    start, end = map(int, match.groups())
+                    if start > end:
+                        raise ValueError
+                if start < 1 or end > len(items):
+                    raise ValueError
+                parsed.update(range(start, end + 1))
+            if not parsed:
+                raise ValueError
+            selected = parsed
+            break
+        except ValueError:
+            print_green(
+                f"Invalid item numbers. Enter values from 1 to {len(items)}, "
+                "for example 1, 3, 5-8."
+            )
+
+    if choice == '2':
+        chosen = [item for index, item in enumerate(items, 1) if index in selected]
+    else:
+        chosen = [item for index, item in enumerate(items, 1) if index not in selected]
+
+    print_green(f"{len(chosen)} of {len(items)} playlist items selected.")
+    return chosen
+
 
 def get_validated_url(is_playlist, mode):
     attempts = 0

@@ -4,7 +4,7 @@ import os
 import sys
 
 from .downloader import process_single_item, process_thumbnail_only
-from .links import get_validated_url
+from .links import choose_playlist_items, get_validated_url
 from .menus import print_main_menu, select_audio_quality, select_photo_quality, select_video_quality
 from .quality import announce_quality, resolve_quality
 from .settings import settings_menu
@@ -112,6 +112,12 @@ def main():
             sys.exit(0)
 
     url, info, playlist_items = get_validated_url(is_playlist, mode)
+
+    if is_playlist:
+        playlist_items = choose_playlist_items(playlist_items, info)
+        if not playlist_items:
+            print_green("No playlist items selected. Operation cancelled.")
+            return
 
     with_audio = True
     if mode == '2':
