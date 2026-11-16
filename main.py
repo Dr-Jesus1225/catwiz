@@ -14,10 +14,13 @@ def run():
     # Prefer the desktop GUI when PySide6 is installed. The CLI remains
     # available everywhere through --cli and as a dependency fallback.
     if "--cli" not in sys.argv:
-        try:
-            from catwiz.system import platform_key
-            if platform_key() != "termux":
+        from catwiz.system import platform_key
+        if platform_key() != "termux":
+            try:
                 from gui.app import run as run_gui
+            except ImportError:
+                component_logger("startup").info("GUI dependencies unavailable; using CLI")
+            else:
                 log_activity("Desktop application started", component="gui")
                 try:
                     return run_gui()
@@ -27,8 +30,6 @@ def run():
                 finally:
                     log_activity("Desktop application closed", component="gui")
                     close_logging()
-        except ImportError:
-            component_logger("startup").info("GUI dependencies unavailable; using CLI")
 
     log_handle = start_session_logging()
     restart = False
