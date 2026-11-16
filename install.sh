@@ -144,7 +144,7 @@ fi
 
 # ---- yt-dlp and the configured CatWiz shortcut ----
 if [ "$OS" = termux ]; then
-  python -m pip install -U yt-dlp || fail "Could not install yt-dlp"
+  python -m pip install -U yt-dlp certifi || fail "Could not install yt-dlp and certificate bundle"
   PYTHON_BIN=python
   SHORTCUT_DIR="$PREFIX/bin"
   if [ ! -d "$HOME/storage" ]; then
