@@ -24,6 +24,7 @@ size_of() {
     termux-git) echo 40;;   termux-python) echo 100;; termux-ffmpeg) echo 150;; termux-yt-dlp) echo 20;;
     linux-git) echo 50;;    linux-python) echo 60;;    linux-ffmpeg) echo 250;;  linux-yt-dlp) echo 20;;
     mac-git) echo 60;;      mac-python) echo 150;;     mac-ffmpeg) echo 400;;    mac-yt-dlp) echo 20;;
+    termux-certifi) echo 2;; linux-certifi) echo 2;; mac-certifi) echo 2;;
     mac-homebrew) echo 1500;;
   esac
 }
@@ -45,6 +46,10 @@ has_ytdlp() {
   if [ "$OS" = termux ]; then python -c "import yt_dlp" &>/dev/null
   else [ -x "$DIR/.venv/bin/python" ] && "$DIR/.venv/bin/python" -c "import yt_dlp" &>/dev/null; fi
 }
+has_certifi() {
+  if [ "$OS" = termux ]; then python -c "import certifi; print(certifi.where())" &>/dev/null
+  else [ -x "$DIR/.venv/bin/python" ] && "$DIR/.venv/bin/python" -c "import certifi; print(certifi.where())" &>/dev/null; fi
+}
 
 FOUND=(); MISSING=(); TOTAL=0
 NEED_GIT=0; NEED_PYTHON=0; NEED_FFMPEG=0; NEED_YTDLP=0; NEED_BREW=0
@@ -62,6 +67,7 @@ check "Git" git has_git
 check "Python" python has_python
 check "FFmpeg" ffmpeg has_ffmpeg
 check "yt-dlp" yt-dlp has_ytdlp
+check "certifi (CA certificates)" certifi has_certifi
 
 if [ "$OS" = mac ] && ! command -v brew &>/dev/null && [ $((NEED_GIT + NEED_PYTHON + NEED_FFMPEG)) -gt 0 ]; then
   NEED_BREW=1
