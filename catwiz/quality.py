@@ -3,7 +3,7 @@
 import yt_dlp
 
 from .cookies import apply_browser_cookies
-from .utils import QuietLogger, log_error
+from .utils import log_error
 
 FORMAT_SORT = ['res', 'vcodec:h264', 'acodec:aac']
 
@@ -19,13 +19,13 @@ def _has(codec):
 def resolve_quality(url, fmt):
     """Ask yt-dlp which format(s) this selection really picks. Returns a dict or None."""
     opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,
+        'no_warnings': False,
+        'verbose': True,
         'skip_download': True,
         'noplaylist': True,
         'format': fmt,
         'format_sort': FORMAT_SORT,
-        'logger': QuietLogger(),
     }
     try:
         with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
