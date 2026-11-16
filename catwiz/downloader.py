@@ -24,7 +24,7 @@ from .utils import (
     safe_remove,
     short_reason,
 )
-from .session_log import write_diagnostic
+from .session_log import logged_yt_dlp_call, write_diagnostic
 
 CURRENT_ITEM = {'safe_title': None}
 
@@ -588,7 +588,7 @@ def has_centered_square_artwork(image_path):
 
 def download_thumbnail_file(item_url, safe_title):
     thumb_opts = {
-        'quiet': False,
+        'quiet': True,
         'no_warnings': False,
         'verbose': True,
         'skip_download': True,
@@ -598,7 +598,7 @@ def download_thumbnail_file(item_url, safe_title):
 
     with yt_dlp.YoutubeDL(apply_browser_cookies(thumb_opts)) as ydl:
         try:
-            ydl.download([item_url])
+            logged_yt_dlp_call(ydl.download, [item_url])
         except Exception as e:
             log_error(item_url, f"thumbnail download failed: {e}")
 
@@ -1132,7 +1132,7 @@ def _process_single_item(
                 },
             ],
             'progress_hooks': [progress_hook],
-            'quiet': False,
+            'quiet': True,
             'no_warnings': False,
             'verbose': True,
         }
