@@ -154,7 +154,7 @@ if [ "$OS" = termux ]; then
   fi
 else
   [ -x "$DIR/.venv/bin/python" ] || python3 -m venv "$DIR/.venv" || fail "Could not create the Python environment"
-  "$DIR/.venv/bin/pip" install -U yt-dlp || fail "Could not install yt-dlp"
+  "$DIR/.venv/bin/pip" install -U yt-dlp certifi || fail "Could not install yt-dlp and certificate bundle"
   PYTHON_BIN="$DIR/.venv/bin/python"
   SHORTCUT_DIR="/usr/local/bin"
   [ "$OS" = mac ] && sudo mkdir -p "$SHORTCUT_DIR"
