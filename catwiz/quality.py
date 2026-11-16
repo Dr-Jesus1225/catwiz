@@ -1,6 +1,5 @@
 """Video format selection and the "actual resolution" lookup."""
 
-import yt_dlp
 
 from .cookies import apply_browser_cookies
 from .utils import log_error
