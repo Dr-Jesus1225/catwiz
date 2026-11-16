@@ -3,11 +3,12 @@
 import os
 import sys
 
-from PySide6.QtCore import Qt, QUrl\nfrom PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel,
-    QLineEdit, QListWidget, QMainWindow, QMessageBox, QPushButton,
-    QStackedWidget, QVBoxLayout, QWidget, QCheckBox
+    QLineEdit, QMainWindow, QMessageBox, QPushButton,
+    QStackedWidget, QVBoxLayout, QWidget, QCheckBox, QTextEdit
 )
 
 from catwiz.system import get_download_dir, set_download_dir, get_auto_update_check, set_auto_update_check
@@ -219,7 +220,7 @@ class CatWizWindow(QMainWindow):
             if (not query or query in line.lower())
             and (not level or (" " + level) in line)
         ]
-        self.log_view.setPlainText("\\n".join(visible) if visible else "No matching log entries.")
+        self.log_view.setPlainText("\n".join(visible) if visible else "No matching log entries.")
         scrollbar = self.log_view.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
@@ -231,7 +232,7 @@ class CatWizWindow(QMainWindow):
         try:
             from catwiz.logging_export import export_diagnostics
             path = export_diagnostics(kind)
-            QMessageBox.information(self, "Diagnostic export created", f"Saved locally to:\\n{path}")
+            QMessageBox.information(self, "Diagnostic export created", f"Saved locally to:\n{path}")
         except (OSError, ValueError) as error:
             QMessageBox.warning(self, "Export failed", "CatWiz could not create the diagnostic export.")
 
