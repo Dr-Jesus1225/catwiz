@@ -32,7 +32,7 @@ def apply_browser_cookies(options):
     except OSError as error:
         write_diagnostic(f"Could not locate certificate bundle: {error}")
 
-    options.setdefault('logger', YtDlpSessionLogger())
+    # Use bundled EJS when present; GitHub is an explicit fallback source for\n    # solver components if the companion package is unavailable/out of date.\n    options.setdefault('remote_components', ['ejs:github'])\n    options.setdefault('logger', YtDlpSessionLogger())
     browser = selected_browser()
     if browser:
         write_diagnostic(f"Browser cookie integration enabled for {browser}; cookie values are never logged.")
