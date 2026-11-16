@@ -288,7 +288,7 @@ class CatWizWindow(QMainWindow):
 
     def _start_download(self):
         mode = str(self.mode_combo.currentIndex() + 1)
-        playlist = self.scope_combo.currentIndex() == 1
+        playlist = self.is_playlist
         selected_items = [url for check, url in self.item_checks if check.isChecked()] if playlist else [self.current_url]
         if not selected_items:
             QMessageBox.information(self, "CatWiz", "Select at least one playlist item.")
