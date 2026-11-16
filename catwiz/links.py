@@ -5,6 +5,7 @@ import sys
 import yt_dlp
 
 from .ui import CYAN, RED, RESET, YELLOW, ask_proceed, print_green
+from .cookies import apply_browser_cookies
 from .utils import QuietLogger, format_duration
 
 def is_valid_yt_url(url):
@@ -18,7 +19,7 @@ def fetch_playlist_info(url):
         'extract_flat': True,
         'logger': QuietLogger(),
     }
-    with yt_dlp.YoutubeDL(opts) as ydl:
+    with yt_dlp.YoutubeDL(apply_browser_cookies(opts)) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
         except Exception:
@@ -175,7 +176,7 @@ def fetch_info(url):
         'no_warnings': True,
         'logger': QuietLogger(),
     }
-    with yt_dlp.YoutubeDL(ydl_info_opts) as ydl:
+    with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_info_opts)) as ydl:
         try:
             return ydl.extract_info(url, download=False)
         except Exception:
@@ -188,7 +189,7 @@ def fetch_playlist_entries(url):
         'extract_flat': True,
         'logger': QuietLogger(),
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    with yt_dlp.YoutubeDL(apply_browser_cookies(ydl_opts)) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
             if not info:
