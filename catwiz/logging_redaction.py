@@ -11,6 +11,7 @@ _ASSIGNMENT = re.compile(
     r"""(?i)(\b(?:cookie|set-cookie|authorization|proxy-authorization|password|passwd|token|api[_-]?key|secret|session(?:id)?|credential)\b\s*[:=]\s*)([^\s,;]+(?:\s+[^,;]+)?)"""
 )
 _BEARER = re.compile(r"(?i)\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+")
+_SENSITIVE_LINE = re.compile(r"(?im)(\b(?:cookie|set-cookie|authorization|proxy-authorization)\b\s*[:=]\s*)[^\r\n]+")
 _URL = re.compile(r"https?://[^\s'\"<>]+")
 
 
@@ -35,6 +36,7 @@ def redact_url(value):
 def redact_text(value):
     """Redact common credential patterns and URL query strings."""
     text = str(value)
+    text = _SENSITIVE_LINE.sub(r"\1[REDACTED]", text)
     text = _BEARER.sub(r"\1 [REDACTED]", text)
     text = _ASSIGNMENT.sub(r"\1[REDACTED]", text)
     return _URL.sub(lambda match: redact_url(match.group(0)), text)
