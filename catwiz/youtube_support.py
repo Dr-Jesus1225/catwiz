@@ -25,6 +25,20 @@ def ensure_youtube_support():
     python = sys.executable
 
     try:
+        server_dir = os.path.join(PROVIDER_HOME, "server")
+        ready = (
+            shutil.which("deno")
+            and os.path.isdir(os.path.join(server_dir, "node_modules"))
+            and os.path.isdir(os.path.join(PROVIDER_HOME, ".git"))
+        )
+        if ready:
+            try:
+                importlib.metadata.version("yt-dlp-ejs")
+                importlib.metadata.version("bgutil-ytdlp-pot-provider")
+                return True
+            except importlib.metadata.PackageNotFoundError:
+                pass
+
         # Keep yt-dlp, its matching EJS package, and the PO-token plugin in
         # the exact interpreter used by CatWiz.
         result = _run([
@@ -72,6 +86,14 @@ def ensure_youtube_support():
         if not os.path.isdir(server_dir):
             logger.error("BgUtils provider source has no server directory")
             return False
+
+        if os.environ.get("PREFIX", "").endswith("com.termux"):
+            # BgUtils' canvas dependency needs these Termux build/runtime packages.
+            _run(["pkg", "install", "-y", "libvips", "xorgproto"], timeout=1200)
+            gyp_dir = os.path.join(os.path.expanduser("~"), ".gyp")
+            os.makedirs(gyp_dir, exist_ok=True)
+            with open(os.path.join(gyp_dir, "include.gypi"), "w", encoding="utf-8") as stream:
+                stream.write("{'variables':{'android_ndk_path':''}}")
 
         install = _run([
             shutil.which("deno"), "install",
