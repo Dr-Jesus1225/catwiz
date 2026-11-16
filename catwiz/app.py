@@ -8,14 +8,17 @@ from .links import choose_playlist_items, get_validated_url
 from .menus import print_main_menu, select_audio_quality, select_photo_quality, select_video_quality
 from .quality import announce_quality, resolve_quality
 from .settings import settings_menu
+from .updater import check_for_updates_on_startup
 from .sidecar import run_sidecar_step
-from .system import check_ffmpeg, get_category_dir
+from .system import check_ffmpeg, get_category_dir, get_auto_update_check
 from .ui import BANNER, CYAN, RESET, YELLOW, ask_yn, print_green
 from .utils import clean_filename
 
 
 def main():
     check_ffmpeg()
+    if get_auto_update_check():
+        check_for_updates_on_startup()
     print(BANNER)
     max_attempts = 3
 
