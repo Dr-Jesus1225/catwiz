@@ -4,7 +4,7 @@ import re
 import sys
 import yt_dlp
 
-from .ui import RED, RESET, YELLOW, ask_proceed, print_green
+from .ui import CYAN, RED, RESET, YELLOW, ask_proceed, print_green
 from .utils import QuietLogger, format_duration
 
 def is_valid_yt_url(url):
