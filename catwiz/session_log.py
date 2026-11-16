@@ -41,7 +41,6 @@ class _TeeStream:
             while "\n" in self._pending:
                 line, self._pending = self._pending.split("\n", 1)
                 self._write_line(line)
-            # Progress bars commonly use carriage returns instead of newlines.
             if "\r" in self._pending:
                 parts = self._pending.split("\r")
                 self._pending = parts[-1]
