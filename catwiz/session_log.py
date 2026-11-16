@@ -41,5 +41,13 @@ def run_yt_dlp(options, action, *args, **kwargs):
 
     options = dict(options)
     options.setdefault("logger", YtDlpSessionLogger())
-    with yt_dlp.YoutubeDL(options) as ydl:
-        return action(ydl, *args, **kwargs)
+    log_activity("Downloader operation started", component="downloader")
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            result = action(ydl, *args, **kwargs)
+        log_activity("Downloader operation completed", component="downloader")
+        return result
+    except Exception:
+        component_logger("downloader").exception("Downloader operation failed")
+        log_activity("Downloader operation failed", component="downloader", level=40)
+        raise
