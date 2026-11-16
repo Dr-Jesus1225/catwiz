@@ -40,6 +40,7 @@ def short_reason(err, limit=140):
 
 def run_ffmpeg(cmd):
     """Run ffmpeg and return (ok, reason). The reason is the last line ffmpeg printed on failure."""
+    write_diagnostic(f"FFmpeg command: {cmd!r}")
     try:
         r = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
                            text=True, errors='replace')
@@ -48,7 +49,6 @@ def run_ffmpeg(cmd):
     except OSError as e:
         return False, short_reason(e)
     if r.stderr:
-        write_diagnostic(f"FFmpeg command: {cmd!r}")
         for detail in r.stderr.splitlines():
             write_diagnostic(detail)
     write_diagnostic(f"FFmpeg exited with code {r.returncode}")
