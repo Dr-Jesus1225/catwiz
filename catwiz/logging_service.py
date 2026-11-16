@@ -14,12 +14,17 @@ from .logging_redaction import redact_text
 _LOCK = threading.RLock()
 _LOGGER = logging.getLogger("catwiz")
 _INITIALIZED = False
-_LOG_DIR = None
+
+
+class _RedactingFormatter(logging.Formatter):
+    def formatException(self, exc_info):
+        return redact_text(super().formatException(exc_info))
 
 
 class _ContextFilter(logging.Filter):
     def filter(self, record):
-        record.session_id, record.download_id = current_context()\n        record.component = getattr(record, "component", "app")
+        record.session_id, record.download_id = current_context()
+        record.component = getattr(record, "component", "app")
         record.msg = redact_text(record.getMessage())
         record.args = ()
         return True
@@ -41,6 +46,14 @@ class _ArchiveDailyHandler(TimedRotatingFileHandler):
 
     def _archive_name(self, default_name):
         return os.path.join(self.archive_dir, os.path.basename(default_name))
+
+    def _open(self):
+        stream = super()._open()
+        try:
+            os.chmod(self.baseFilename, 0o600)
+        except OSError:
+            pass
+        return stream
 
 
 def _cleanup_archive(archive_dir):
@@ -72,8 +85,29 @@ def get_log_paths():
     }
 
 
+def _migrate_legacy_log(paths):
+    """Copy the old download-folder log once, sanitized; never delete the original."""
+    marker = os.path.join(paths["archive"], "legacy-logs-migrated.txt")
+    if os.path.exists(marker):
+        return
+    try:
+        from .system import get_download_dir
+        old_path = os.path.join(get_download_dir(), "logs.txt")
+        if os.path.isfile(old_path):
+            from .logging_redaction import redact_text
+            with open(old_path, "r", encoding="utf-8", errors="replace") as source:
+                safe_contents = redact_text(source.read())
+            with open(os.path.join(paths["archive"], "legacy-logs.txt"), "w", encoding="utf-8") as target:
+                target.write(safe_contents)
+        with open(marker, "w", encoding="utf-8") as stream:
+            stream.write("Legacy log migration checked; original logs.txt was not modified.\n")
+    except OSError:
+        # A later startup can retry if the user's download folder is unavailable.
+        pass
+
+
 def get_logger():
-    global _INITIALIZED, _LOG_DIR
+    global _INITIALIZED
     with _LOCK:
         if _INITIALIZED:
             return _LOGGER
@@ -81,34 +115,34 @@ def get_logger():
         try:
             os.makedirs(paths["archive"], exist_ok=True)
             os.makedirs(paths["exports"], exist_ok=True)
-            _LOG_DIR = os.path.dirname(paths["activity"])
+            try:
+                os.chmod(get_log_dir(), 0o700)
+                os.chmod(paths["archive"], 0o700)
+                os.chmod(paths["exports"], 0o700)
+            except OSError:
+                pass
+            _migrate_legacy_log(paths)
             _LOGGER.setLevel(logging.DEBUG)
             _LOGGER.propagate = False
-            formatter = logging.Formatter(
+            formatter = _RedactingFormatter(
                 "%(asctime)s %(levelname)-8s [%(name)s:%(component)s] "
                 "[session=%(session_id)s download=%(download_id)s] %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
             context_filter = _ContextFilter()
 
-            diagnostics = _ArchiveDailyHandler(paths["diagnostics"], paths["archive"])
-            diagnostics.setLevel(logging.DEBUG)
-            diagnostics.setFormatter(formatter)
-            diagnostics.addFilter(context_filter)
-            _LOGGER.addHandler(diagnostics)
-
-            activity = _ArchiveDailyHandler(paths["activity"], paths["archive"])
-            activity.setLevel(logging.INFO)
-            activity.setFormatter(formatter)
-            activity.addFilter(context_filter)
-            activity.addFilter(_ActivityOnly())
-            _LOGGER.addHandler(activity)
-
-            errors = _ArchiveDailyHandler(paths["errors"], paths["archive"])
-            errors.setLevel(logging.WARNING)
-            errors.setFormatter(formatter)
-            errors.addFilter(context_filter)
-            _LOGGER.addHandler(errors)
+            for filename, level, activity_only in (
+                (paths["diagnostics"], logging.DEBUG, False),
+                (paths["activity"], logging.INFO, True),
+                (paths["errors"], logging.WARNING, False),
+            ):
+                handler = _ArchiveDailyHandler(filename, paths["archive"])
+                handler.setLevel(level)
+                handler.setFormatter(formatter)
+                handler.addFilter(context_filter)
+                if activity_only:
+                    handler.addFilter(_ActivityOnly())
+                _LOGGER.addHandler(handler)
 
             _INITIALIZED = True
             _cleanup_archive(paths["archive"])
@@ -159,7 +193,8 @@ def log_exception(message, component="app", error=None):
     if error is None:
         logger.exception(message)
     else:
-        logger.error("%s: %s", message, error, exc_info=(type(error), error, error.__traceback__))
+        logger.error("%s: %s", message, error,
+                     exc_info=(type(error), error, error.__traceback__))
 
 
 def close_logging():
