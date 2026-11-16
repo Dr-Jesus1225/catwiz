@@ -32,10 +32,15 @@ class _TeeStream:
         self.errors = getattr(terminal, "errors", None) or "replace"
         self._pending = ""
         self.menu_options = {}
+        self._last_was_input = False
 
     def write(self, value):
         written = self.terminal.write(value)
         try:
+            if self._last_was_input:
+                self.log_file.write(f"{_timestamp()} [APP] {str(value).rstrip()}\\n")
+                self.log_file.flush()
+                self._last_was_input = False
             clean = _ANSI_ESCAPE.sub("", str(value))
             self._pending += clean
             while "\n" in self._pending:
@@ -60,6 +65,7 @@ class _TeeStream:
         self.log_file.flush()
 
     def log_input(self, prompt, value):
+        self._last_was_input = True
         clean_prompt = _ANSI_ESCAPE.sub("", str(prompt)).strip()
         selected = self.menu_options.get(str(value).strip())
         detail = f"selected={selected!r}; " if selected else ""
