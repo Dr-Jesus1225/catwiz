@@ -1169,9 +1169,9 @@ def _process_single_item(
                 }
             ],
             'progress_hooks': [progress_hook],
-            'quiet': True,
-            'no_warnings': True,
-            'logger': QuietLogger(),
+            'quiet': False,
+            'no_warnings': False,
+            'verbose': True,
         }
 
     try:
