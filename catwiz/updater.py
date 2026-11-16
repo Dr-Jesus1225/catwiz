@@ -10,6 +10,7 @@ import tempfile
 from .system import DISPLAY, brew_formulae, find_brew, in_venv, last_line, mac_python_formula, platform_key, run_capture, windows_python_id
 from .ui import CYAN, GREEN, RED, RESET, YELLOW, ask_yes_no, print_green
 from .utils import PROGRAM_DIR, short_reason
+from .logging_service import component_logger, log_activity
 
 def show_status(status, msg):
     if status in ('changed', 'same'):
@@ -30,6 +31,7 @@ def update_program():
         return 'failed', 'git not found'
     ok, out = run_capture(['git', '-C', PROGRAM_DIR, 'pull', '--ff-only'])
     if not ok:
+        component_logger('updater').error('CatWiz update failed: %s', last_line(out)[:140])
         return 'failed', last_line(out)[:140]
     if 'already up to date' in out.lower():
         return 'same', 'already up to date'
@@ -42,6 +44,7 @@ def update_ytdlp():
     if not ok and 'externally-managed' in out.lower() and not in_venv():
         ok, out = run_capture(cmd + ['--break-system-packages'])
     if not ok:
+        component_logger('updater').error('yt-dlp update failed: %s', last_line(out)[:140])
         return 'failed', last_line(out)[:140]
 
     # Verify certifi using the exact interpreter running CatWiz. A successful
@@ -185,7 +188,8 @@ def check_for_updates_on_startup():
         print_green("Updates installed. Restarting CatWiz automatically...")
         sys.exit(75)
     if 'failed' in statuses:
-        print(f"{YELLOW}Some updates could not be installed. Check logs.txt for details.{RESET}")
+        log_activity("One or more updates failed; review the Logs page for details.", component="updater", level=40)
+        print(f"{YELLOW}Some updates could not be installed. Review CatWiz > Logs for details.{RESET}")
     else:
         print_green("Everything is up to date.")
 
