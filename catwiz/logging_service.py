@@ -16,6 +16,29 @@ _LOGGER = logging.getLogger("catwiz")
 _INITIALIZED = False
 
 
+def _install_exception_hooks():
+    def handle_main_exception(exc_type, exc_value, traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, traceback)
+            return
+        _LOGGER.error("Unhandled application exception",
+                      exc_info=(exc_type, exc_value, traceback),
+                      extra={"component": "uncaught"})
+        try:
+            sys.__stderr__.write("CatWiz encountered an unexpected error. Details were saved in ~/.catwiz/logs/errors.log.\\n")
+        except Exception:
+            pass
+
+    def handle_thread_exception(args):
+        _LOGGER.error("Unhandled background-thread exception",
+                      exc_info=(args.exc_type, args.exc_value, args.exc_traceback),
+                      extra={"component": "background"})
+
+    sys.excepthook = handle_main_exception
+    if hasattr(threading, "excepthook"):
+        threading.excepthook = handle_thread_exception
+
+
 class _RedactingFormatter(logging.Formatter):
     def formatException(self, exc_info):
         return redact_text(super().formatException(exc_info))
@@ -145,6 +168,7 @@ def get_logger():
                 _LOGGER.addHandler(handler)
 
             _INITIALIZED = True
+            _install_exception_hooks()
             _cleanup_archive(paths["archive"])
             set_session_id(new_session_id())
             _LOGGER.info(
