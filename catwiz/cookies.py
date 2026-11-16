@@ -2,7 +2,6 @@
 
 import json
 import os
-import ssl
 
 from .system import get_config_file
 from .ui import print_green
