@@ -1,4 +1,4 @@
-
+ 
 """The Settings menu."""
 
 import subprocess
@@ -18,6 +18,31 @@ from .system import (
 )
 from .shortcuts import change_shortcut
 from .cookies import browser_cookies_menu
+
+
+def reinstall_menu():
+    print(f"\n{CYAN}--------------------------------------{RESET}")
+    print(" Reinstall CatWiz")
+    print("  1. Run the official GitHub installer (repair/update)")
+    print("  2. Uninstall CatWiz, then reinstall")
+    print("  0. Back")
+    print(f"{CYAN}--------------------------------------{RESET}")
+    choice = input(f"{YELLOW}Select option [1/2/0]:{RESET} ").strip()
+    if choice == "0":
+        return
+    if choice == "1":
+        if not ask_yes_no("Run the official CatWiz installer from GitHub?"):
+            print_green("Cancelled.")
+            return
+        from .reinstall import run_github_installer
+        run_github_installer()
+    elif choice == "2":
+        if not ask_yes_no("Remove the CatWiz program and shortcut, then reinstall it? Other tools and your downloads will be kept."):
+            print_green("Cancelled.")
+            return
+        uninstall_menu(reinstall=True)
+    else:
+        print_green("Invalid option selected.")
 
 
 def clear_cache():
@@ -86,79 +111,55 @@ def move_downloaded_files(new_location):
 
     sources = []
 
-    # Previous CatWiz layout: videos directly inside Downloads.
     try:
         for filename in os.listdir(default_dir):
             source = os.path.join(default_dir, filename)
-
             if not os.path.isfile(source):
                 continue
-
             category = get_file_category(filename)
-
             if category:
                 sources.append((source, category))
     except OSError:
         pass
 
-    # Previous audio and thumbnail folders.
     for folder, category in (
         ('Music', 'Audios'),
         ('Thumbnails', 'Thumbnails')
     ):
         directory = os.path.join(default_dir, folder)
-
         if os.path.isdir(directory):
             for filename in os.listdir(directory):
                 source = os.path.join(directory, filename)
-
                 if os.path.isfile(source) and get_file_category(filename):
                     sources.append((source, category))
 
-    # Existing CatWiz folder structure, if present.
     for category in ('Audios', 'Videos', 'Thumbnails'):
         directory = os.path.join(old_catwiz_dir, category)
-
         if os.path.isdir(directory):
             for filename in os.listdir(directory):
                 source = os.path.join(directory, filename)
-
                 if os.path.isfile(source) and get_file_category(filename):
                     sources.append((source, category))
 
     moved = 0
     failed = 0
-
     for source, category in sources:
         try:
             destination_dir = os.path.join(new_location, category)
             os.makedirs(destination_dir, exist_ok=True)
-
-            destination = os.path.join(
-                destination_dir,
-                os.path.basename(source)
-            )
-
-            # Avoid overwriting files with the same name.
+            destination = os.path.join(destination_dir, os.path.basename(source))
             if os.path.exists(destination):
                 name, ext = os.path.splitext(destination)
                 counter = 1
-
                 while os.path.exists(f"{name}_{counter}{ext}"):
                     counter += 1
-
                 destination = f"{name}_{counter}{ext}"
-
-            # Do not attempt to move a file onto itself.
             if os.path.abspath(source) == os.path.abspath(destination):
                 continue
-
             shutil.move(source, destination)
             moved += 1
-
         except OSError:
             failed += 1
-
     return moved, failed
 
 
@@ -166,87 +167,58 @@ def change_download_location():
     print(f"\nCurrent download location:")
     print(get_download_dir())
     print()
-
     new_location = input(
         f"{YELLOW}Enter new download location (0 to cancel):{RESET} "
     ).strip()
-
     if new_location == '0':
         print_green("Cancelled.")
         return
-
     new_location = os.path.abspath(
         os.path.expanduser(os.path.expandvars(new_location.strip('"')))
     )
-
     if not new_location:
         print_green("Invalid location.")
         return
-
     current_location = os.path.abspath(get_download_dir())
-
     if new_location == current_location:
         print_green("This is already your download location.")
         return
-
     if os.path.isfile(new_location):
         print_green("The selected location is a file, not a folder.")
         return
-
     try:
         os.makedirs(new_location, exist_ok=True)
-    except OSError as e:
-        print(f"{YELLOW}Could not create folder: {e}{RESET}")
-        return
-
-    # Save the new location.
-    try:
         set_download_dir(new_location)
     except OSError as e:
         print(f"{YELLOW}Could not save download location: {e}{RESET}")
         return
-
     print_green(f"Download location changed to: {new_location}")
-
-    # Check for existing downloads without announcing the scan.
     default_dir = get_default_download_dir()
-
     has_downloads = False
-
     try:
         for filename in os.listdir(default_dir):
             if get_file_category(filename):
                 has_downloads = True
                 break
-
         if not has_downloads:
             for folder in ('Music', 'Thumbnails', 'CatWiz'):
                 directory = os.path.join(default_dir, folder)
-
                 if not os.path.isdir(directory):
                     continue
-
                 for root, _, files in os.walk(directory):
                     if any(get_file_category(f) for f in files):
                         has_downloads = True
                         break
-
                 if has_downloads:
                     break
     except OSError:
         pass
-
     if has_downloads:
         if ask_yes_no("Move downloaded files to new location?"):
             moved, failed = move_downloaded_files(new_location)
-
             print_green(f"Moved {moved} downloaded files.")
-
             if failed:
-                print(
-                    f"{YELLOW}{failed} files could not be moved. "
-                    f"Check file permissions or whether they are in use.{RESET}"
-                )
+                print(f"{YELLOW}{failed} files could not be moved. Check file permissions or whether they are in use.{RESET}")
         else:
             print_green("Existing downloads were left in their original locations.")
 
@@ -265,7 +237,6 @@ def toggle_startup_update_check():
 
 def settings_menu():
     max_attempts = 3
-
     while True:
         print(f"\n{CYAN}======================================{RESET}")
         print(" Settings")
@@ -276,28 +247,23 @@ def settings_menu():
         print("  5. Change shortcut")
         print("  6. Check for updates on startup")
         print("  7. YouTube browser cookies")
+        print("  8. Reinstall")
         print("  0. Back")
         print(f"{CYAN}--------------------------------------{RESET}")
-
         attempts = 0
         choice = None
-
         while attempts < max_attempts:
             choice = input(
-                f"{YELLOW}Select option [1/2/3/4/5/6/7/0]:{RESET} "
+                f"{YELLOW}Select option [1/2/3/4/5/6/7/8/0]:{RESET} "
             ).strip()
-
-            if choice in ("0", "1", "2", "3", "4", "5", "6", "7"):
+            if choice in ("0", "1", "2", "3", "4", "5", "6", "7", "8"):
                 break
-
             attempts += 1
-
             if attempts < max_attempts:
                 print_green("Invalid option selected.")
             else:
                 print_green("Too many invalid attempts. Exiting.")
                 sys.exit(1)
-
         if choice == "0":
             return
         elif choice == "1":
@@ -314,3 +280,5 @@ def settings_menu():
             toggle_startup_update_check()
         elif choice == "7":
             browser_cookies_menu()
+        elif choice == "8":
+            reinstall_menu()
