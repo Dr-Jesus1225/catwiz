@@ -71,7 +71,7 @@ def parse_selection(text, count):
             return None
     return sorted(picked)
 
-def schedule_windows_cleanup(folder, remove_python, python_id='Python.Python.3.12'):
+def schedule_windows_cleanup(folder, remove_python, python_id='Python.Python.3.12', reinstall=False):
     """A running program can't delete its own folder on Windows, so a helper does it after we exit."""
     lines = ['@echo off', 'cd /d "%USERPROFILE%"', 'ping 127.0.0.1 -n 4 >nul']
     if remove_python:
@@ -85,6 +85,8 @@ def schedule_windows_cleanup(folder, remove_python, python_id='Python.Python.3.1
             ')',
             ':done',
         ]
+    if reinstall:
+        lines.append('powershell -NoProfile -ExecutionPolicy Bypass -Command "$script = (Invoke-WebRequest -UseBasicParsing \'https://raw.githubusercontent.com/Dr-Jesus1225/catwiz/main/install.ps1\').Content; Invoke-Expression $script"')
     lines.append('del "%~f0" >nul 2>&1')
     bat = os.path.join(tempfile.gettempdir(), 'catwiz_cleanup.bat')
     with open(bat, 'w') as f:
@@ -231,7 +233,7 @@ def uninstall_menu(reinstall=False):
             pass
         if key == 'windows':
             try:
-                schedule_windows_cleanup(PROGRAM_DIR, deferred_python, windows_python_id())
+                schedule_windows_cleanup(PROGRAM_DIR, deferred_python, windows_python_id(), reinstall=reinstall)
                 print_green("scheduled")
             except Exception as e:
                 report(False, str(e))
@@ -250,6 +252,9 @@ def uninstall_menu(reinstall=False):
         except Exception:
             pass
 
+    if reinstall and key == 'windows':
+        print_green("CatWiz has been removed. The GitHub installer will start after this process exits.")
+        sys.exit(0)
     print_green("\nCatWiz has been uninstalled.")
     if key == 'windows':
         if folder_ok:
