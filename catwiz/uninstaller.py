@@ -96,6 +96,8 @@ def schedule_windows_cleanup(folder, remove_python, python_id='Python.Python.3.1
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def uninstall_menu(reinstall=False):
+    if reinstall:
+        from .reinstall import run_github_installer
     key = platform_key()
     sizes = SIZES_MB[key]
     folder_ok = program_dir_is_safe(PROGRAM_DIR)
@@ -242,7 +244,6 @@ def uninstall_menu(reinstall=False):
                 shutil.rmtree(PROGRAM_DIR)
                 report(True)
                 if reinstall:
-                    from .reinstall import run_github_installer
                     run_github_installer()
             except Exception as e:
                 report(False, str(e))
