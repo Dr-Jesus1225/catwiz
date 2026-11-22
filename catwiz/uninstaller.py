@@ -93,7 +93,7 @@ def schedule_windows_cleanup(folder, remove_python, python_id='Python.Python.3.1
     subprocess.Popen(['cmd', '/c', bat], creationflags=flags, close_fds=True,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-def uninstall_menu():
+def uninstall_menu(reinstall=False):
     key = platform_key()
     sizes = SIZES_MB[key]
     folder_ok = program_dir_is_safe(PROGRAM_DIR)
@@ -121,11 +121,14 @@ def uninstall_menu():
             print(f"  - Shortcut: {shortcut}")
     print("Your downloaded files will NOT be deleted.")
 
-    items = removable_items()
+    items = [] if reinstall else removable_items()
     found = [it for it in items if it['found']]
     selected = []
 
-    print("\nAlso remove these programs? Other apps may use them.")
+    if not reinstall:
+        print("\nAlso remove these programs? Other apps may use them.")
+    else:
+        print("\nReinstall mode keeps dependencies, settings and downloaded files.")
     n = 0
     for it in items:
         label = DISPLAY[it['id']]
@@ -137,7 +140,8 @@ def uninstall_menu():
             print(f"  -  {label:<8} (not found)")
     if found:
         print(f"  {n + 1}. All of the above")
-    print("  0. Keep them all")
+    if not reinstall:
+        print("  0. Keep them all")
 
     if found:
         attempts = 0
@@ -168,7 +172,8 @@ def uninstall_menu():
 
     print(f"\nYou chose to remove: {', '.join(names) if names else 'Shortcut only'}")
     print(f"This frees about {fmt_mb(freed)}.")
-    if not ask_yes_no("Are you sure? This can't be undone."):
+    prompt = "Remove CatWiz and reinstall it from GitHub? Your downloads and settings will be kept." if reinstall else "Are you sure? This can't be undone."
+    if not ask_yes_no(prompt):
         print_green("Cancelled.")
         return
 
@@ -234,6 +239,9 @@ def uninstall_menu():
             try:
                 shutil.rmtree(PROGRAM_DIR)
                 report(True)
+                if reinstall:
+                    from .reinstall import run_github_installer
+                    run_github_installer()
             except Exception as e:
                 report(False, str(e))
     elif deferred_python:
